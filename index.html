@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Music AO — A tua música, o teu dinheiro</title>
+<meta name="description" content="A plataforma angolana de streaming e monetização musical. Cada play paga ao artista, em kwanzas, com transparência total.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230B0B0F'/><path d='M30 70V32l14 22 14-22v38' stroke='%23E0122C' stroke-width='9' fill='none' stroke-linecap='round' stroke-linejoin='round'/><circle cx='74' cy='36' r='7' fill='%23F2B01E'/></svg>">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== Sidebar (desktop) / topbar (mobile) ===== -->
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="#/home" aria-label="Music AO — início">
+      <svg viewBox="0 0 100 100" class="brand-mark" aria-hidden="true">
+        <path d="M30 70V32l14 22 14-22v38" stroke="var(--red)" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="74" cy="36" r="7" fill="var(--gold)"/>
+      </svg>
+      <span class="brand-name">MUSIC<em>AO</em></span>
+    </a>
+
+    <nav class="nav" aria-label="Navegação principal">
+      <a href="#/home"      data-route="home"><span class="nav-ico">◉</span> Início</a>
+      <a href="#/explorar"  data-route="explorar"><span class="nav-ico">▤</span> Explorar</a>
+      <a href="#/pesquisa"  data-route="pesquisa"><span class="nav-ico">⌕</span> Pesquisar</a>
+      <a href="#/wallet"    data-route="wallet"><span class="nav-ico">▣</span> Wallet</a>
+      <a href="#/upload"    data-route="upload"    data-role="artista"><span class="nav-ico">▲</span> Publicar</a>
+      <a href="#/dashboard" data-route="dashboard" data-role="artista"><span class="nav-ico">◫</span> Meu painel</a>
+      <a href="#/admin"     data-route="admin"     data-role="admin"><span class="nav-ico">⛭</span> Administração</a>
+      <a href="#/pagamentos" data-route="pagamentos" data-role="admin"><span class="nav-ico">◈</span> Pagamentos PSX</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="role-switch" role="group" aria-label="Modo de demonstração — perfil">
+        <span class="role-label">Demo — perfil</span>
+        <div class="role-btns">
+          <button data-setrole="ouvinte" class="active">Ouvinte</button>
+          <button data-setrole="artista">Artista</button>
+          <button data-setrole="admin">Admin</button>
+        </div>
+      </div>
+      <div class="wallet-chip" id="walletChip" title="Saldo da wallet">
+        <span class="wallet-dot"></span>
+        <span id="walletBalance">—</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== Main ===== -->
+  <main class="main" id="main" tabindex="-1"></main>
+
+  <!-- ===== Player persistente ===== -->
+  <footer class="player" id="player" hidden>
+    <div class="player-track">
+      <div class="player-cover" id="pCover"></div>
+      <div class="player-meta">
+        <div class="player-title" id="pTitle">—</div>
+        <div class="player-artist" id="pArtist">—</div>
+      </div>
+      <div class="eq" id="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+
+    <div class="player-center">
+      <div class="player-controls">
+        <button id="btnPrev" aria-label="Anterior">⏮</button>
+        <button id="btnPlay" class="btn-play" aria-label="Reproduzir / pausar">▶</button>
+        <button id="btnNext" aria-label="Seguinte">⏭</button>
+      </div>
+      <div class="player-progress">
+        <span id="pTime">0:00</span>
+        <div class="bar" id="pBar"><div class="bar-fill" id="pFill"></div></div>
+        <span id="pDur">0:00</span>
+      </div>
+    </div>
+
+    <div class="player-right">
+      <div class="paid-ticker" id="paidTicker" title="Transparência: total já pago ao artista por esta faixa">
+        <span class="tick-label">pago ao artista</span>
+        <span class="tick-value" id="tickValue">0 Kz</span>
+      </div>
+      <button id="btnDl" class="btn-dl" title="Comprar download — 50 AKZ">⭳ 50 Kz</button>
+    </div>
+  </footer>
+
+  <!-- ===== Bottom nav (mobile) ===== -->
+  <nav class="bottomnav" aria-label="Navegação móvel">
+    <a href="#/home" data-route="home">◉<span>Início</span></a>
+    <a href="#/explorar" data-route="explorar">▤<span>Explorar</span></a>
+    <a href="#/pesquisa" data-route="pesquisa">⌕<span>Pesquisa</span></a>
+    <a href="#/wallet" data-route="wallet">▣<span>Wallet</span></a>
+  </nav>
+</div>
+
+<!-- ===== Modal genérico ===== -->
+<div class="modal-backdrop" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" id="modalBox"></div>
+</div>
+
+<!-- ===== Toasts ===== -->
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="js/data.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
