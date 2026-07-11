@@ -357,6 +357,7 @@ table.data tr:last-child td{border-bottom:0}
   position:fixed;inset:0;background:rgba(5,5,8,.72);backdrop-filter:blur(4px);
   display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;
 }
+.modal-backdrop[hidden]{display:none}
 .modal{
   background:var(--surface);border:1px solid var(--line);border-radius:18px;
   padding:30px;max-width:520px;width:100%;max-height:86vh;overflow:auto;
