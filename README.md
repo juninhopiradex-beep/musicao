@@ -18,7 +18,27 @@
 | **Transparência** | Contador ao vivo de AKZ pagos aos artistas em cada faixa e no hero |
 | **Perfis** | Comutador demo Ouvinte / Artista / Admin na barra lateral |
 
-Todos os dados são fictícios e o estado (saldo, licenças, subscrição, uploads) fica guardado no browser (localStorage).
+Todos os dados são fictícios e o estado (saldo, licenças, subscrição, uploads, perfil de artista) fica guardado no browser (localStorage).
+
+### Registo de artista (onboarding obrigatório)
+
+Ao entrar no portal do artista pela primeira vez, é obrigatório criar o perfil antes de publicar: **Nome completo, BI e IBAN são obrigatórios**; o BI é validado pelo formato oficial angolano (`^\d{9}[A-Z]{2}\d{3}$`) e o **IBAN é validado com o algoritmo de checksum ISO 7064 MOD-97** (AO + 23 dígitos). É obrigatório carregar uma fotografia. Taxa de inscrição de 10.000 Kz debitada da carteira.
+
+### Privacidade dos valores
+
+Os **valores arrecadados nunca aparecem em páginas abertas** — os perfis públicos mostram apenas seguidores, faixas e plays. Os ganhos são visíveis só no painel privado do artista (Total arrecadado + Valor por receber) e ficam registados na conta de administração com histórico completo.
+
+### Transferência de saldo entre utilizadores
+
+Na carteira, qualquer utilizador com saldo pode **transferir créditos para outro utilizador** (por telefone ou ID), com confirmação e recibo no histórico.
+
+### Instalável como app (PWA) — Android, iOS e tablet
+
+Inclui `manifest.webmanifest` + service worker (`sw.js`), pelo que a plataforma é **instalável no ecrã inicial** de Android, iOS e tablets, com ícone próprio e funcionamento em ecrã cheio. É totalmente responsiva (breakpoints de telemóvel, tablet e desktop).
+
+### Caminho para apps nativas iOS/Android
+
+O protótipo é uma PWA — já instalável hoje. Para publicar nas lojas: (1) empacotar a PWA com **Capacitor** ou **Trusted Web Activity** (Android) para gerar apps nativas rapidamente; ou (2) na versão de produção, reescrever o cliente em **React Native/Expo** partilhando o design system, publicando na App Store e Google Play. O backend e a API (ver `musicao_openapi.yaml`) servem web e nativo sem alterações.
 
 ### Regras financeiras implementadas (conforme especificação)
 

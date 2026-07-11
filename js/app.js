@@ -27,11 +27,33 @@ const S = {
   dlUsed: store.get('dlUsed', 0),               // downloads utilizados no ciclo atual
   dataMode: store.get('dataMode', 'normal'),    // economica | normal | alta
   cardPool: store.get('cardPool', []),          // cartões de recarga gerados pelo admin
+  artistProfile: store.get('artistProfile', null), // perfil do artista registado (onboarding)
 };
-const persist = () => { store.set('role', S.role); store.set('balance', S.balance); store.set('owned', S.owned); store.set('txs', S.txs); store.set('pendingUploads', S.pendingUploads); store.set('followed', S.followed); store.set('premiumUntil', S.premiumUntil); store.set('dlUsed', S.dlUsed); store.set('dataMode', S.dataMode); store.set('cardPool', S.cardPool); };
+const persist = () => { store.set('role', S.role); store.set('balance', S.balance); store.set('owned', S.owned); store.set('txs', S.txs); store.set('pendingUploads', S.pendingUploads); store.set('followed', S.followed); store.set('premiumUntil', S.premiumUntil); store.set('dlUsed', S.dlUsed); store.set('dataMode', S.dataMode); store.set('cardPool', S.cardPool); store.set('artistProfile', S.artistProfile); };
 const isPremium = () => S.premiumUntil && new Date(S.premiumUntil) > new Date();
 const dlLeft = () => Math.max(0, PREMIUM_DL_LIMIT - S.dlUsed);
 const renewDate = () => S.premiumUntil ? new Date(S.premiumUntil).toLocaleDateString('pt-PT') : '—';
+
+/* ---- Validação de documentos angolanos ---- */
+// IBAN Angola: AO + 2 dígitos de controlo + 21 dígitos NBA = 25 caracteres.
+// Validação estrutural + checksum ISO 7064 MOD-97-10.
+function validarIBAN_AO(raw){
+  const s = (raw || '').replace(/\s+/g, '').toUpperCase();
+  if(!/^AO\d{23}$/.test(s)) return { ok:false, motivo:'O IBAN deve ter o formato AO + 23 dígitos (25 caracteres).' };
+  const rearr = s.slice(4) + s.slice(0, 4);
+  let expanded = '';
+  for(const ch of rearr) expanded += /[A-Z]/.test(ch) ? String(ch.charCodeAt(0) - 55) : ch;
+  let rem = 0;
+  for(let i = 0; i < expanded.length; i++) rem = (rem * 10 + (expanded.charCodeAt(i) - 48)) % 97;
+  return rem === 1 ? { ok:true } : { ok:false, motivo:'IBAN inválido (dígitos de controlo não conferem).' };
+}
+// BI Angola: 9 dígitos + 2 letras + 3 dígitos = 14 caracteres.
+function validarBI_AO(raw){
+  const s = (raw || '').replace(/\s+/g, '').toUpperCase();
+  return /^\d{9}[A-Z]{2}\d{3}$/.test(s)
+    ? { ok:true } : { ok:false, motivo:'O BI deve ter 9 dígitos + 2 letras + 3 dígitos (ex.: 007654321LA042).' };
+}
+function fmtIBAN(s){ return (s || '').replace(/\s+/g, '').toUpperCase().replace(/(.{4})/g, '$1 ').trim(); }
 
 const PRICE_STREAM = 10, PRICE_DL = 100, FEE_UPLOAD = 1000, ARTIST_SHARE = 0.8;
 const PREMIUM_PRICE = 25000;                 // subscrição mensal (AKZ)
@@ -160,7 +182,8 @@ function renderPlayerBar(t){
   dl.classList.toggle('owned', owned || (isPremium() && dlLeft() > 0));
 }
 function updateTicker(t){
-  $('#tickValue').textContent = fmtKz(t.paidTotal + (S.paidLive[t.id] || 0));
+  const labels = { economica:'Económica', normal:'Normal', alta:'Alta' };
+  const el2 = $('#tickValue'); if(el2) el2.textContent = labels[S.dataMode] || 'Normal';
 }
 function updateProgress(t){
   $('#pTime').textContent = fmtDur(S.elapsed);
@@ -249,7 +272,7 @@ function trackCard(t){
     '<div class="cover" style="' + coverStyle(t.genre) + '"><span class="genre-tag">' + g.name + '</span></div>' +
     '<div class="t-title">' + t.title + '</div>' +
     '<div class="t-artist">' + a.name + '</div>' +
-    '<div class="t-paid">' + fmtKz(t.paidTotal + (S.paidLive[t.id] || 0)) + ' pagos ao artista</div>' +
+    '<div class="t-paid">' + fmtN(t.plays) + ' plays</div>' +
     '<button class="play-fab" aria-label="Reproduzir ' + t.title + '">▶</button>' +
   '</div>';
 }
@@ -258,8 +281,8 @@ function trackRow(t, i){
   return '<div class="trow" data-tid="' + t.id + '" data-play="' + t.id + '">' +
     '<span class="idx">' + String(i + 1).padStart(2, '0') + '</span>' +
     '<div class="mini-cover" style="' + coverStyle(t.genre) + '"></div>' +
-    '<div><div class="tt">' + t.title + '</div><div class="ta">' + a.name + ' · ' + fmtN(t.plays) + ' plays</div></div>' +
-    '<span class="tpaid">' + fmtKz(t.paidTotal + (S.paidLive[t.id] || 0)) + '</span>' +
+    '<div><div class="tt">' + t.title + '</div><div class="ta">' + a.name + '</div></div>' +
+    '<span class="tpaid">' + fmtN(t.plays) + ' plays</span>' +
     '<span class="tdur">' + fmtDur(t.dur) + '</span>' +
   '</div>';
 }
@@ -387,7 +410,7 @@ function viewArtista(params){
       '<div class="stats">' +
         '<span><b>' + fmtN(a.followers) + '</b> seguidores</span>' +
         '<span><b>' + list.length + '</b> faixas</span>' +
-        '<span><b style="color:var(--gold)">' + fmtKz(paid) + '</b> recebidos na Music AO</span>' +
+        '<span><b>' + fmtN(list.reduce((s,t)=>s+t.plays,0)) + '</b> plays</span>' +
       '</div>' +
       '<div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">' +
         '<button class="btn btn-red btn-sm" data-follow="' + a.id + '">' + (following ? 'A seguir ✓' : '+ Seguir') + '</button>' +
@@ -461,6 +484,15 @@ function viewWallet(){
     '<div style="margin-top:22px"><button class="btn btn-gold" id="btnTopup">Carregar saldo</button></div>' +
   '</div>' +
 
+  /* ---- Transferir saldo para outro utilizador ---- */
+  '<div class="section"><div class="section-head"><h2>Transferir saldo</h2></div>' +
+    '<div class="panel"><p style="color:var(--muted);font-size:13px;margin-bottom:14px">Envia créditos da tua carteira para outro utilizador Music AO — ele poderá usá-los para ouvir e descarregar música. Indica o telefone ou o ID da conta de destino.</p>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">' +
+        '<div class="field" style="flex:1;min-width:200px"><label for="trfTo">Destinatário</label><input id="trfTo" placeholder="Ex.: 923 000 000 ou @ndala"></div>' +
+        '<div class="field" style="width:150px"><label for="trfAmt">Valor (AKZ)</label><input id="trfAmt" type="number" placeholder="500" min="50"></div>' +
+        '<button class="btn btn-gold btn-sm" id="btnTransfer" style="padding:12px 20px">Enviar</button>' +
+      '</div></div></div>' +
+
   /* ---- Ativar código de recarga (cartão físico/digital) ---- */
   '<div class="section"><div class="section-head"><h2>Ativar código de recarga</h2></div>' +
     '<div class="panel"><p style="color:var(--muted);font-size:13px;margin-bottom:14px">Compraste um cartão Music AO num agente? Introduz o código (ou lê o QR) para creditar o saldo. Cada cartão só pode ser utilizado uma vez.</p>' +
@@ -491,10 +523,45 @@ function nowStamp(){
   return d.toLocaleDateString('pt-PT') + ' ' + d.toLocaleTimeString('pt-PT', { hour:'2-digit', minute:'2-digit' });
 }
 
+/* ============================================================
+   ONBOARDING DO ARTISTA — cadastro obrigatório antes de publicar
+   Nome completo, BI e IBAN obrigatórios e validados. Foto obrigatória.
+   ============================================================ */
+function viewArtistOnboarding(){
+  return '' +
+  '<div class="eyebrow">Portal do artista · registo</div>' +
+  '<h1 class="h-display" style="font-size:30px;margin-bottom:8px">Cria o teu perfil de artista</h1>' +
+  '<p style="color:var(--muted);margin-bottom:24px">Antes de publicares música, precisamos de validar a tua identidade e a tua conta bancária — é assim que garantimos que recebes os teus pagamentos. Os campos com * são obrigatórios.</p>' +
+
+  '<div class="panel"><div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">' +
+    '<div style="text-align:center">' +
+      '<div id="obPhoto" style="width:132px;height:132px;border-radius:16px;background:var(--surface2);border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;color:var(--muted);font-size:12px;text-align:center;padding:8px">Carregar<br>fotografia *</div>' +
+      '<input id="obPhotoInput" type="file" accept="image/*" hidden>' +
+    '</div>' +
+    '<div style="flex:1;min-width:260px"><div class="form-grid">' +
+      field('Nome completo *', 'obNome', 'text', 'Como no BI') +
+      field('Nome artístico', 'obArtistico', 'text', 'Ex.: Kalunga MC') +
+      field('Idade', 'obIdade', 'number', '') +
+      field('NIF', 'obNif', 'text', 'opcional') +
+    '</div></div>' +
+  '</div></div>' +
+
+  '<div class="panel"><h3>Identificação e conta bancária</h3><div class="form-grid">' +
+    '<div class="field"><label for="obBI">Bilhete de Identidade *</label><input id="obBI" type="text" placeholder="007654321LA042" style="text-transform:uppercase"><div class="valid-msg" id="msgBI"></div></div>' +
+    selectField('Banco', 'obBanco', ['BIC','BAI','BFA','BPC','SOL','BCI','Standard Bank','Keve','BNI']) +
+    '<div class="field" style="grid-column:1 / -1"><label for="obIBAN">IBAN *</label><input id="obIBAN" type="text" placeholder="AO06 0040 0000 1089 4244 10175" style="text-transform:uppercase;font-family:monospace"><div class="valid-msg" id="msgIBAN"></div></div>' +
+    field('Titular da conta', 'obTitular', 'text', 'Nome do titular') +
+  '</div>' +
+  '<div class="fee-note" style="margin-top:20px">◆ Taxa de inscrição única: <b>' + fmtN(10000) + ' Kz</b> — debitada da tua wallet. Saldo atual: <b>' + fmtKz(S.balance) + '</b>. Após validação, ficas elegível para receber pagamentos.</div>' +
+  '<button class="btn btn-red" id="btnRegisterArtist" style="margin-top:6px">Concluir registo e pagar ' + fmtN(10000) + ' Kz</button>' +
+  '</div>';
+}
+
 function viewUpload(){
   if(S.role === 'ouvinte') return roleGate('artista', 'O portal de publicação é exclusivo para artistas');
+  if(!S.artistProfile) return viewArtistOnboarding();   // cadastro obrigatório primeiro
   return '' +
-  '<div class="eyebrow">Portal do artista</div>' +
+  '<div class="eyebrow">Portal do artista · ' + (S.artistProfile.artistico || S.artistProfile.nome) + (S.artistProfile.verificado ? ' <span style="color:var(--gold)">✔ verificado</span>' : '') + '</div>' +
   '<h1 class="h-display" style="font-size:30px;margin-bottom:26px">Publicar nova faixa</h1>' +
   '<div class="dropzone" id="dropzone"><span class="dz-ico">▲</span>' +
     '<b>Arrasta o teu WAV, FLAC ou MP3 para aqui</b><br>ou clica para escolher · máx. 200 MB · validação e antivírus automáticos' +
@@ -538,6 +605,7 @@ function selectField(label, id, opts){
 
 function viewDashboard(){
   if(S.role === 'ouvinte') return roleGate('artista', 'O painel analítico é exclusivo para artistas');
+  if(!S.artistProfile) return viewArtistOnboarding();
   const a = ARTISTS[0]; // artista demo: Kalunga MC
   const acc = ARTIST_ACCOUNTS.find(x => x.artistId === a.id) || {};
   const mine = TRACKS.filter(t => t.artistId === a.id);
@@ -776,6 +844,26 @@ function bindView(route){
       main.querySelectorAll('[data-datamode]').forEach(x => x.classList.toggle('active', x === b));
       toast('Qualidade de áudio: <b>' + b.textContent + '</b>.', 'ok');
     }));
+    const trf = $('#btnTransfer');
+    if(trf) trf.addEventListener('click', () => {
+      const to = ($('#trfTo').value || '').trim();
+      const amt = +$('#trfAmt').value || 0;
+      if(!to){ toast('Indica o destinatário.', 'red'); return; }
+      if(amt < 50){ toast('Valor mínimo de transferência: 50 AKZ.', 'red'); return; }
+      if(amt > S.balance){ toast('Saldo insuficiente para transferir <b>' + fmtN(amt) + ' Kz</b>.', 'red'); return; }
+      openModal('<h3>Confirmar transferência</h3>' +
+        '<p>Vais enviar <b style="color:var(--gold)">' + fmtN(amt) + ' Kz</b> para <b style="color:var(--text)">' + to + '</b>. Esta operação é imediata e não pode ser revertida.</p>' +
+        '<div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancelar</button>' +
+        '<button class="btn btn-gold btn-sm" id="confirmTrf">Enviar ' + fmtN(amt) + ' Kz</button></div>');
+      $('#confirmTrf').addEventListener('click', () => {
+        closeModal();
+        S.balance -= amt;
+        S.txs.unshift({ type:'debit', amount:-amt, desc:'Transferência para ' + to, time: nowStamp() });
+        persist(); updateWalletChip();
+        toast('Transferência concluída: <b>' + fmtN(amt) + ' Kz</b> enviados para <b>' + to + '</b>. Recibo no histórico.', 'ok');
+        render();
+      });
+    });
     const act = $('#btnActivateCard');
     if(act) act.addEventListener('click', () => {
       const code = ($('#cardCode').value || '').trim().toUpperCase();
@@ -841,7 +929,67 @@ function bindView(route){
       });
     });
   }
-  if(route === 'upload' && S.role !== 'ouvinte'){
+  if((route === 'upload' || route === 'dashboard') && S.role !== 'ouvinte' && !S.artistProfile){
+    let photoData = null;
+    const photoBox = $('#obPhoto'), photoInput = $('#obPhotoInput');
+    if(photoBox){
+      photoBox.addEventListener('click', () => photoInput.click());
+      photoInput.addEventListener('change', () => {
+        const f = photoInput.files[0]; if(!f) return;
+        const r = new FileReader();
+        r.onload = () => { photoData = r.result; photoBox.style.backgroundImage = 'url(' + photoData + ')'; photoBox.style.backgroundSize = 'cover'; photoBox.style.backgroundPosition = 'center'; photoBox.style.border = '2px solid var(--gold)'; photoBox.textContent = ''; };
+        r.readAsDataURL(f);
+      });
+    }
+    const biIn = $('#obBI'), ibanIn = $('#obIBAN');
+    const liveBI = () => {
+      const v = validarBI_AO(biIn.value);
+      const m = $('#msgBI');
+      if(!biIn.value){ m.textContent = ''; biIn.style.borderColor = ''; return; }
+      m.textContent = v.ok ? '✓ BI válido' : v.motivo;
+      m.className = 'valid-msg ' + (v.ok ? 'ok' : 'bad');
+      biIn.style.borderColor = v.ok ? 'var(--ok)' : 'var(--red)';
+    };
+    const liveIBAN = () => {
+      const v = validarIBAN_AO(ibanIn.value);
+      const m = $('#msgIBAN');
+      if(!ibanIn.value){ m.textContent = ''; ibanIn.style.borderColor = ''; return; }
+      m.textContent = v.ok ? '✓ IBAN válido (checksum confere)' : v.motivo;
+      m.className = 'valid-msg ' + (v.ok ? 'ok' : 'bad');
+      ibanIn.style.borderColor = v.ok ? 'var(--ok)' : 'var(--red)';
+    };
+    if(biIn) biIn.addEventListener('input', liveBI);
+    if(ibanIn) ibanIn.addEventListener('input', liveIBAN);
+
+    const reg = $('#btnRegisterArtist');
+    if(reg) reg.addEventListener('click', () => {
+      const nome = ($('#obNome').value || '').trim();
+      const bi = validarBI_AO(biIn.value);
+      const iban = validarIBAN_AO(ibanIn.value);
+      if(!nome){ toast('<b>Nome completo</b> é obrigatório.', 'red'); return; }
+      if(!bi.ok){ toast('<b>BI inválido.</b> ' + bi.motivo, 'red'); liveBI(); return; }
+      if(!iban.ok){ toast('<b>IBAN inválido.</b> ' + iban.motivo, 'red'); liveIBAN(); return; }
+      if(!photoData){ toast('<b>Fotografia</b> é obrigatória.', 'red'); return; }
+      if(S.balance < 10000){ toast('Precisas de <b>10.000 Kz</b> para a taxa de inscrição. Recarrega primeiro.', 'red'); location.hash = '#/wallet'; return; }
+      S.balance -= 10000;
+      S.txs.unshift({ type:'debit', amount:-10000, desc:'Taxa de inscrição de artista', time: nowStamp() });
+      S.artistProfile = {
+        nome, artistico: ($('#obArtistico').value || '').trim() || nome,
+        idade: $('#obIdade').value || '', nif: ($('#obNif').value || '').trim(),
+        bi: biIn.value.replace(/\s+/g, '').toUpperCase(),
+        iban: fmtIBAN(ibanIn.value), banco: $('#obBanco').value,
+        titular: ($('#obTitular').value || '').trim() || nome,
+        foto: photoData, verificado: false,
+        totalArrecadado: 0, porReceber: 0,   // contadores do artista (privados)
+        criadoEm: nowStamp(),
+      };
+      persist(); updateWalletChip();
+      toast('<b>Registo concluído!</b> Identidade e IBAN validados. Já podes publicar música e acompanhar os teus ganhos.', 'ok');
+      location.hash = '#/dashboard';
+      render();
+    });
+  }
+  if(route === 'upload' && S.role !== 'ouvinte' && S.artistProfile){
     const dz = $('#dropzone');
     let fileName = '';
     const pick = () => { fileName = 'master_' + Date.now() + '.wav'; simulateUpload(fileName); };
