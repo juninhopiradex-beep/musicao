@@ -58,6 +58,7 @@
         <span class="wallet-dot"></span>
         <span id="walletBalance">—</span>
       </div>
+      <button class="install-btn" id="installBtn" hidden>⭳ Instalar app</button>
     </div>
   </aside>
 
@@ -94,8 +95,36 @@
         <span class="tick-value" id="tickValue">Normal</span>
       </div>
       <button id="btnDl" class="btn-dl" title="Comprar download">⭳ 100 Kz</button>
+      <button id="btnExpand" class="btn-expand" title="Expandir leitor" aria-label="Expandir leitor">⤢</button>
     </div>
   </footer>
+
+  <!-- ===== Leitor expandido (ecrã cheio) ===== -->
+  <div class="np-overlay" id="npOverlay" hidden>
+    <button class="np-close" id="npClose" aria-label="Fechar">⌄</button>
+    <div class="np-inner">
+      <div class="np-cover" id="npCover"></div>
+      <div class="np-title" id="npTitle">—</div>
+      <a class="np-artist" id="npArtist" href="#">—</a>
+      <div class="np-progress">
+        <span id="npTime">0:00</span>
+        <div class="np-bar" id="npBar"><div class="np-fill" id="npFill"></div></div>
+        <span id="npDur">4:34</span>
+      </div>
+      <div class="np-controls">
+        <button id="npShuffle" class="np-sec" title="Aleatório" aria-label="Aleatório">⤨</button>
+        <button id="npPrev" class="np-sec" title="Anterior" aria-label="Anterior">⏮</button>
+        <button id="npPlay" class="np-play" title="Reproduzir / pausar" aria-label="Reproduzir / pausar">▶</button>
+        <button id="npNext" class="np-sec" title="Seguinte" aria-label="Seguinte">⏭</button>
+        <button id="npRepeat" class="np-sec" title="Repetir" aria-label="Repetir">⟲</button>
+      </div>
+      <div class="np-actions">
+        <button id="npFav" class="np-act">♡ Favoritar</button>
+        <button id="npDl" class="np-act">⭳ Baixar</button>
+        <button id="npPlaylist" class="np-act">↗ Ver playlist completa</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ===== Bottom nav (mobile) ===== -->
   <nav class="bottomnav" aria-label="Navegação móvel">
@@ -120,6 +149,19 @@
   <span class="wa-label">Suporte</span>
 </a>
 
+<!-- ===== Banner de instalação PWA ===== -->
+<div class="install-banner" id="installBanner" hidden>
+  <img src="icons/icon-192.png" alt="Music AO" class="ib-icon">
+  <div class="ib-text">
+    <div class="ib-title">Instale a app</div>
+    <div class="ib-sub">Music AO · musicao.ao</div>
+  </div>
+  <div class="ib-actions">
+    <button class="ib-btn ib-cancel" id="ibCancel">Cancelar</button>
+    <button class="ib-btn ib-install" id="ibInstall">Instalar</button>
+  </div>
+</div>
+
 <script src="js/data.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/app.js"></script>
@@ -127,6 +169,43 @@
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
+
+// ===== Instalação PWA (instalador próprio) =====
+let deferredPrompt = null;
+const installBtn = document.getElementById('installBtn');
+const installBanner = document.getElementById('installBanner');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if(installBtn) installBtn.hidden = false;
+  // mostrar banner uma vez por sessão
+  if(installBanner && !sessionStorage.getItem('ib-dismissed')){
+    installBanner.hidden = false;
+  }
+});
+
+async function doInstall(){
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  if(installBtn) installBtn.hidden = true;
+  if(installBanner) installBanner.hidden = true;
+}
+
+if(installBtn) installBtn.addEventListener('click', doInstall);
+document.getElementById('ibInstall')?.addEventListener('click', doInstall);
+document.getElementById('ibCancel')?.addEventListener('click', () => {
+  installBanner.hidden = true;
+  sessionStorage.setItem('ib-dismissed', '1');
+});
+
+window.addEventListener('appinstalled', () => {
+  if(installBtn) installBtn.hidden = true;
+  if(installBanner) installBanner.hidden = true;
+  deferredPrompt = null;
+});
 </script>
 </body>
 </html>

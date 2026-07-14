@@ -36,6 +36,7 @@ const S = {
   authed: store.get('authed', false),           // sessão iniciada (conta criada / login)
   planName: store.get('planName', null),         // 'Semanal' | 'Mensal'
   fraudLog: store.get('fraudLog', []),           // alertas de segurança para admin
+  shuffle: false, repeat: false,                 // modos do leitor
   previewMode: false,                            // reprodução atual é preview de 30s?
 };
 const persist = () => { store.set('role', S.role); store.set('balance', S.balance); store.set('owned', S.owned); store.set('txs', S.txs); store.set('pendingUploads', S.pendingUploads); store.set('followed', S.followed); store.set('premiumUntil', S.premiumUntil); store.set('dlUsed', S.dlUsed); store.set('dataMode', S.dataMode); store.set('cardPool', S.cardPool); store.set('artistProfile', S.artistProfile); store.set('liked', S.liked); store.set('playlists', S.playlists); store.set('recent', S.recent); store.set('authed', S.authed); store.set('planName', S.planName); store.set('fraudLog', S.fraudLog); };
@@ -203,13 +204,22 @@ function doLogin(verbo){
 function pausePlayback(){
   S.isPlaying = false; AudioEngine.pause();
   $('#btnPlay').textContent = '▶'; $('#eq').classList.remove('on');
+  const np = $('#npPlay'); if(np) np.textContent = '▶';
 }
 function resumePlayback(){
   const t = S.queue[S.qIdx]; if(!t) return;
   S.isPlaying = true; AudioEngine.play(t);
   $('#btnPlay').textContent = '❚❚'; $('#eq').classList.add('on');
+  const np = $('#npPlay'); if(np) np.textContent = '❚❚';
 }
-function nextTrack(){ if(S.qIdx < S.queue.length - 1){ S.qIdx++; startPlayback(); } else pausePlayback(); }
+function nextTrack(){
+  if(S.repeat){ startPlayback(); return; }
+  if(S.shuffle){
+    S.qIdx = Math.floor(Math.random() * S.queue.length);
+    startPlayback(); return;
+  }
+  if(S.qIdx < S.queue.length - 1){ S.qIdx++; startPlayback(); } else pausePlayback();
+}
 function prevTrack(){ if(S.qIdx > 0){ S.qIdx--; startPlayback(); } }
 
 function renderPlayerBar(t){
@@ -227,6 +237,21 @@ function renderPlayerBar(t){
     : (isPremium() ? (dlLeft() > 0 ? '⭳ ' + dlLeft() + ' de ' + PREMIUM_DL_LIMIT : '⭳ ' + PRICE_DL + ' Kz')
                    : '⭳ ' + PRICE_DL + ' Kz');
   dl.classList.toggle('owned', owned || (isPremium() && dlLeft() > 0));
+  syncExpanded(t);
+}
+function syncExpanded(t){
+  const cover = $('#npCover'); if(!cover) return;
+  cover.style.cssText = coverStyle(t.genre) + ';width:100%;max-width:380px;aspect-ratio:1;border-radius:20px;margin-bottom:26px';
+  $('#npTitle').textContent = t.title;
+  $('#npArtist').textContent = artistOf(t.artistId).name;
+  $('#npArtist').setAttribute('href', '#/artista/' + t.artistId);
+  $('#npDur').textContent = fmtDur(t.dur);
+  $('#npPlay').textContent = S.isPlaying ? '❚❚' : '▶';
+  $('#npShuffle').classList.toggle('on', S.shuffle);
+  $('#npRepeat').classList.toggle('on', S.repeat);
+  const fav = $('#npFav');
+  fav.classList.toggle('liked', S.liked.includes(t.id));
+  fav.innerHTML = (S.liked.includes(t.id) ? '♥' : '♡') + ' Favoritar';
 }
 function updateTicker(t){
   const labels = { economica:'Económica', normal:'Normal', alta:'Alta' };
@@ -234,8 +259,10 @@ function updateTicker(t){
 }
 function updateProgress(t, limit){
   const total = limit || t.dur;
+  const pct = Math.min(100, S.elapsed / total * 100);
   $('#pTime').textContent = fmtDur(S.elapsed) + (limit ? ' / 0:' + PREVIEW_SEC + ' (preview)' : '');
-  $('#pFill').style.width = Math.min(100, S.elapsed / total * 100) + '%';
+  $('#pFill').style.width = pct + '%';
+  const nf = $('#npFill'); if(nf){ nf.style.width = pct + '%'; $('#npTime').textContent = fmtDur(S.elapsed); }
 }
 $('#btnPlay').addEventListener('click', () => S.isPlaying ? pausePlayback() : resumePlayback());
 $('#btnNext').addEventListener('click', nextTrack);
@@ -250,6 +277,40 @@ $('#btnDl').addEventListener('click', () => {
   const t = S.queue[S.qIdx]; if(!t) return;
   buyDownload(t.id);
 });
+
+/* ---- Leitor expandido (ecrã cheio) ---- */
+function openExpanded(){
+  const t = S.queue[S.qIdx]; if(!t) return;
+  syncExpanded(t); updateProgress(t);
+  $('#npOverlay').hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+function closeExpanded(){
+  $('#npOverlay').hidden = true;
+  document.body.style.overflow = '';
+}
+$('#btnExpand').addEventListener('click', openExpanded);
+document.querySelector('.player-track')?.addEventListener('click', openExpanded);
+$('#npClose').addEventListener('click', closeExpanded);
+$('#npPlay').addEventListener('click', () => { S.isPlaying ? pausePlayback() : resumePlayback(); const t = S.queue[S.qIdx]; if(t) syncExpanded(t); });
+$('#npNext').addEventListener('click', () => { nextTrack(); });
+$('#npPrev').addEventListener('click', () => { prevTrack(); });
+$('#npShuffle').addEventListener('click', () => { S.shuffle = !S.shuffle; if(S.shuffle) S.repeat = false; const t = S.queue[S.qIdx]; if(t) syncExpanded(t); toast(S.shuffle ? 'Modo aleatório ligado' : 'Modo aleatório desligado'); });
+$('#npRepeat').addEventListener('click', () => { S.repeat = !S.repeat; if(S.repeat) S.shuffle = false; const t = S.queue[S.qIdx]; if(t) syncExpanded(t); toast(S.repeat ? 'Repetição ligada' : 'Repetição desligada'); });
+$('#npBar').addEventListener('click', e => {
+  const t = S.queue[S.qIdx]; if(!t) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  S.elapsed = Math.floor((e.clientX - r.left) / r.width * t.dur);
+  updateProgress(t);
+});
+$('#npFav').addEventListener('click', () => {
+  const t = S.queue[S.qIdx]; if(!t) return;
+  const i = S.liked.indexOf(t.id);
+  if(i >= 0) S.liked.splice(i, 1); else { S.liked.push(t.id); toast('Adicionada às favoritas ♥', 'ok'); }
+  persist(); syncExpanded(t);
+});
+$('#npDl').addEventListener('click', () => { const t = S.queue[S.qIdx]; if(t) buyDownload(t.id); });
+$('#npPlaylist').addEventListener('click', () => { closeExpanded(); location.hash = '#/biblioteca'; });
 
 /* ---- Regras de download (secção 8 da especificação) ---- */
 function buyDownload(trackId){
@@ -396,8 +457,6 @@ function viewHome(){
       '<a class="btn btn-red" href="#/explorar">Começar a ouvir</a>' +
       '<a class="btn btn-ghost" href="#/upload">Sou artista</a>' +
     '</div>' +
-    '<div class="hero-counter"><div class="num" id="heroCounter">' + fmtKz(totalPaidAll()) + '</div>' +
-    '<div class="lbl">já pagos aos artistas</div></div>' +
   '</div>' +
   '<div class="section"><div class="section-head"><h2>Top Angola</h2><a href="#/explorar">ver tudo →</a></div>' +
     '<div class="tracklist">' + top.map(trackRow).join('') + '</div></div>' +
@@ -1632,17 +1691,6 @@ function setRole(r){
 }
 document.querySelectorAll('.role-btns [data-setrole]').forEach(b =>
   b.addEventListener('click', () => setRole(b.dataset.setrole)));
-
-/* ---------- hero counter live ---------- */
-setInterval(() => {
-  const hc = $('#heroCounter');
-  if(hc){
-    // simula plays a acontecer pela plataforma fora
-    const t = TRACKS[Math.floor(Math.random() * TRACKS.length)];
-    t.paidTotal += 8;
-    hc.textContent = fmtKz(totalPaidAll());
-  }
-}, 2500);
 
 /* ---------- boot ---------- */
 window.addEventListener('hashchange', render);

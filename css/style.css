@@ -429,9 +429,79 @@ table.data tr:last-child td{border-bottom:0}
 .player-controls button{font-size:16px;color:var(--muted)}
 .player-controls button:hover{color:var(--text)}
 .btn-play{
-  width:40px;height:40px;border-radius:50%;background:#fff;color:#111 !important;
-  display:flex;align-items:center;justify-content:center;font-size:15px;
+  width:44px;height:44px;border-radius:50%;
+  background:var(--red);color:#fff !important;
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  box-shadow:0 4px 14px rgba(224,18,44,.5);transition:transform .12s;
 }
+.btn-play:hover{transform:scale(1.06)}
+.btn-expand{
+  border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:15px;color:var(--muted);
+  transition:.15s;
+}
+.btn-expand:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ---- leitor expandido (ecrã cheio) ---- */
+.np-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:radial-gradient(900px 500px at 50% -10%,rgba(224,18,44,.14),transparent 60%),var(--bg,#0B0B0F);
+  display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;
+  animation:npUp .28s ease;
+}
+@keyframes npUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.np-close{
+  position:absolute;top:18px;left:50%;transform:translateX(-50%);
+  font-size:26px;color:var(--muted);width:44px;height:44px;border-radius:50%;
+}
+.np-close:hover{color:var(--text);background:var(--surface2)}
+.np-inner{width:100%;max-width:440px;padding:70px 28px 40px;text-align:center;display:flex;flex-direction:column;align-items:center}
+.np-cover{
+  width:100%;max-width:380px;aspect-ratio:1;border-radius:20px;margin-bottom:26px;
+  background-size:cover;background-position:center;
+  border:1px solid rgba(242,176,30,.4);box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.np-title{font-family:var(--font-display);font-weight:900;font-size:34px;line-height:1.1}
+.np-artist{color:var(--red);font-weight:700;font-size:16px;margin-top:8px;text-decoration:underline;text-underline-offset:3px}
+.np-progress{display:flex;align-items:center;gap:12px;width:100%;margin:28px 0 8px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.np-bar{flex:1;height:6px;border-radius:5px;background:var(--surface2);cursor:pointer;position:relative}
+.np-fill{height:100%;width:0;border-radius:5px;background:var(--red);position:relative}
+.np-fill::after{content:'';position:absolute;right:-6px;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;background:var(--red)}
+.np-controls{display:flex;align-items:center;justify-content:center;gap:24px;margin-top:22px}
+.np-sec{font-size:22px;color:var(--text);width:44px;height:44px;transition:.15s}
+.np-sec:hover{color:var(--gold)}
+.np-sec.on{color:var(--gold)}
+.np-play{
+  width:74px;height:74px;border-radius:50%;background:var(--red);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  box-shadow:0 8px 24px rgba(224,18,44,.55);transition:transform .12s;
+}
+.np-play:hover{transform:scale(1.05)}
+.np-actions{display:flex;gap:26px;margin-top:34px;flex-wrap:wrap;justify-content:center}
+.np-act{color:var(--muted);font-size:14px;display:flex;align-items:center;gap:7px;transition:.15s}
+.np-act:hover{color:var(--text)}
+.np-act.liked{color:var(--red)}
+/* ---- instalação PWA ---- */
+.install-btn{
+  width:100%;margin-top:10px;padding:10px;border-radius:10px;
+  border:1px solid var(--gold);color:var(--gold);font-weight:700;font-size:13px;transition:.15s;
+}
+.install-btn:hover{background:var(--gold);color:#1a1205}
+.install-banner{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:300;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;
+  padding:18px 20px;display:flex;align-items:center;gap:14px;max-width:440px;width:calc(100% - 32px);
+  box-shadow:0 20px 60px rgba(0,0,0,.5);animation:npUp .3s ease;
+}
+.ib-icon{width:52px;height:52px;border-radius:12px}
+.ib-text{flex:1;min-width:0}
+.ib-title{font-family:var(--font-display);font-weight:700;font-size:17px}
+.ib-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+.ib-actions{display:flex;gap:8px}
+.ib-btn{padding:9px 16px;border-radius:20px;font-weight:600;font-size:13px;border:1px solid var(--line);transition:.15s}
+.ib-cancel{color:var(--muted)}
+.ib-cancel:hover{color:var(--text)}
+.ib-install{border-color:var(--red);color:var(--red)}
+.ib-install:hover{background:var(--red);color:#fff}
 .player-progress{display:flex;align-items:center;gap:10px;width:100%;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 .bar{flex:1;height:5px;border-radius:4px;background:var(--surface2);cursor:pointer;position:relative}
 .bar-fill{height:100%;width:0;border-radius:4px;background:var(--red)}
@@ -515,15 +585,19 @@ table.data tr:last-child td{border-bottom:0}
   .artist-hero{flex-direction:column;align-items:flex-start;padding:28px 24px;gap:18px}
   .player{grid-template-columns:1fr auto;gap:12px;padding:0 14px}
   .player-center{min-width:0;flex:1}
-  .player-right{display:none}
+  .player-right{display:flex;gap:8px}
+  .player-right .paid-ticker{display:none}
+  .player-right .btn-dl{display:none}
+  .btn-expand{display:flex;align-items:center;justify-content:center}
+  .player-track{cursor:pointer}
   .player-progress{display:none}
   .eq{display:none}
   .bottomnav{
     display:flex;position:fixed;left:0;right:0;bottom:0;z-index:65;height:60px;
     background:rgba(11,11,15,.96);border-top:1px solid var(--line);
-    transform:translateY(0);
+    transform:translateY(0);padding-bottom:env(safe-area-inset-bottom);
   }
-  .player{bottom:60px}
+  .player{bottom:calc(60px + env(safe-area-inset-bottom))}
   .bottomnav a{
     flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:3px;color:var(--muted);font-size:16px;
@@ -532,6 +606,12 @@ table.data tr:last-child td{border-bottom:0}
   .bottomnav a.active{color:var(--red)}
   .trow{grid-template-columns:34px 44px 1fr auto}
   .trow .tpaid{display:none}
+  .trow-actions{opacity:1}
   .dash-cols{grid-template-columns:1fr !important}
   .main{max-width:100%}
+  .np-inner{padding:60px 22px 40px}
+  .np-cover{max-width:300px}
+  .np-title{font-size:28px}
+  .np-actions{gap:18px}
+  .sidebar{padding-top:calc(12px + env(safe-area-inset-top))}
 }
