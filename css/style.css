@@ -172,8 +172,112 @@ body[data-role="admin"] .nav a[data-role="admin"]{display:flex}
 /* ---------- track rows ---------- */
 .tracklist{display:flex;flex-direction:column}
 .trow{
-  display:grid;grid-template-columns:34px 44px 1fr auto auto;gap:14px;align-items:center;
+  display:grid;grid-template-columns:34px 44px 1fr auto auto auto;gap:14px;align-items:center;
   padding:10px 14px;border-radius:10px;cursor:pointer;
+}
+.trow-actions{display:flex;gap:6px;opacity:0;transition:opacity .15s}
+.trow:hover .trow-actions{opacity:1}
+.ico-btn{width:30px;height:30px;border-radius:8px;font-size:15px;color:var(--muted);transition:.15s}
+.ico-btn:hover{background:var(--surface2);color:var(--text)}
+.ico-btn.liked{color:var(--red)}
+.founder-banner{
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  border-radius:16px;padding:20px 24px;margin-bottom:22px;
+  background:
+    radial-gradient(500px 200px at 100% -30%,rgba(242,176,30,.22),transparent 60%),
+    linear-gradient(135deg,#1a1508,#14141c);
+  border:1px solid rgba(242,176,30,.35);
+}
+.founder-badge{
+  font-family:var(--font-display);font-weight:700;font-size:12px;letter-spacing:.08em;
+  color:#1a1205;background:linear-gradient(135deg,#F2B01E,#d99a12);
+  padding:8px 12px;border-radius:8px;white-space:nowrap;
+}
+.founder-track{height:6px;border-radius:4px;background:rgba(255,255,255,.1);margin-top:8px;overflow:hidden}
+.founder-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold),var(--red))}
+
+.ai-badge{
+  display:inline-block;font-size:9px;font-weight:800;letter-spacing:.06em;
+  background:var(--gold-soft);color:var(--gold);border:1px solid rgba(242,176,30,.35);
+  border-radius:5px;padding:1px 5px;vertical-align:middle;margin-left:4px;
+}
+/* ---- cartões de plano de subscrição ---- */
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.plan-card{
+  position:relative;border:1px solid var(--line);border-radius:16px;padding:22px;
+  background:var(--surface);display:flex;flex-direction:column;
+}
+.plan-card.featured{
+  border-color:rgba(242,176,30,.4);
+  background:radial-gradient(500px 200px at 90% -30%,var(--gold-soft),transparent 60%),var(--surface);
+}
+.plan-badge{
+  position:absolute;top:-10px;right:16px;background:linear-gradient(135deg,#F2B01E,#d99a12);
+  color:#1a1205;font-size:10px;font-weight:800;letter-spacing:.06em;padding:4px 10px;border-radius:6px;
+}
+.plan-name{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.plan-price{font-family:var(--font-display);font-weight:900;font-size:34px;margin-top:6px}
+.plan-price span{font-size:14px;font-weight:600;color:var(--muted);margin-left:2px}
+.plan-per{font-size:12px;color:var(--muted);margin-bottom:14px}
+.plan-feats{list-style:none;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);margin-bottom:18px;flex:1}
+.plan-btn{width:100%}
+/* ---- canal de vídeos (placeholder) ---- */
+.videos-hero{
+  text-align:center;padding:60px 24px;border-radius:22px;
+  background:radial-gradient(700px 300px at 50% -10%,rgba(224,18,44,.18),transparent 60%),var(--surface);
+  border:1px solid var(--line);margin-top:10px;
+}
+.videos-emoji{font-size:64px;margin-bottom:10px;filter:drop-shadow(0 6px 20px rgba(224,18,44,.4))}
+.countdown{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.cd-box{
+  background:var(--surface2);border:1px solid var(--line);border-radius:12px;
+  padding:14px 20px;min-width:74px;
+}
+.cd-box span{font-family:var(--font-display);font-weight:900;font-size:30px;color:var(--gold);display:block;line-height:1}
+.cd-box label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px;display:block}
+/* ---- ícones de redes sociais ---- */
+.social-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.social-ico{
+  width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  background:var(--surface2);border:1px solid var(--line);color:var(--text);font-weight:700;font-size:14px;
+  transition:.15s;text-decoration:none;
+}
+.social-ico:hover{background:var(--sc);color:#fff;border-color:var(--sc);transform:translateY(-2px)}
+/* ---- cartões de totais ---- */
+.totals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px}
+.total-card{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;
+  display:flex;flex-direction:column;gap:2px;position:relative;overflow:hidden;
+}
+.total-card::before{content:'';position:absolute;inset:0;background:radial-gradient(300px 120px at 100% 0,var(--gold-soft),transparent 60%);pointer-events:none}
+.total-ico{font-size:20px;opacity:.85}
+.total-num{font-family:var(--font-display);font-weight:900;font-size:30px;line-height:1;margin-top:6px}
+.total-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+/* ---- top charts por estilo ---- */
+.chart-card{
+  border-radius:16px;padding:18px;min-height:120px;cursor:pointer;position:relative;
+  display:flex;flex-direction:column;justify-content:space-between;color:#fff;
+  transition:transform .15s;overflow:hidden;
+}
+.chart-card:hover{transform:translateY(-3px)}
+.chart-badge{font-family:var(--font-display);font-weight:800;font-size:15px;letter-spacing:.04em;text-shadow:0 2px 8px rgba(0,0,0,.3)}
+.chart-top{font-size:13px;font-weight:600;background:rgba(0,0,0,.28);border-radius:8px;padding:8px 10px;backdrop-filter:blur(4px)}
+.chart-top span{display:block;font-size:11px;opacity:.85;font-weight:400;margin-top:2px}
+
+/* ---- suporte WhatsApp flutuante ---- */
+.wa-fab{
+  position:fixed;right:20px;bottom:calc(var(--player-h) + 20px);z-index:90;
+  display:flex;align-items:center;gap:8px;
+  background:#25D366;color:#fff;text-decoration:none;font-weight:700;font-size:14px;
+  padding:12px 18px;border-radius:30px;box-shadow:0 6px 20px rgba(37,211,102,.45);
+  transition:transform .15s,box-shadow .15s;
+}
+.wa-fab:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(37,211,102,.6)}
+.wa-ico{font-size:18px}
+@media (max-width:640px){
+  .wa-fab{right:14px;bottom:calc(var(--player-h) + 70px);padding:12px}
+  .wa-label{display:none}
 }
 .trow:hover{background:var(--surface)}
 .trow.playing{background:var(--red-soft)}

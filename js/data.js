@@ -15,7 +15,7 @@ const GENRES = [
 ];
 
 const ARTISTS = [
-  { id:'a1', name:'Kalunga MC',       province:'Luanda',   genre:'kuduro',    followers:184300, verified:true  },
+  { id:'a1', name:'Kalunga MC',       province:'Luanda',   genre:'kuduro',    followers:184300, verified:true, socials:{facebook:'https://facebook.com/kalungamc',instagram:'https://instagram.com/kalungamc',youtube:'https://youtube.com/@kalungamc',tiktok:'https://tiktok.com/@kalungamc'} },
   { id:'a2', name:'Dona Rosa Semba',  province:'Benguela', genre:'semba',     followers:96100,  verified:true  },
   { id:'a3', name:'Txilar do Bié',    province:'Bié',      genre:'afrohouse', followers:61200,  verified:false },
   { id:'a4', name:'Mena Kiz',         province:'Luanda',   genre:'kizomba',   followers:220800, verified:true  },
@@ -33,14 +33,14 @@ const TRACKS = [
   { id:'t4',  title:'Okuenda (Caminhar)',   artistId:'a3', genre:'afrohouse', bpm:122, key:'C min', dur:334, plays:512300,  paidTotal:4098400,  year:2026 },
   { id:'t5',  title:'Kandengue de Ouro',    artistId:'a5', genre:'rap',       bpm:96,  key:'G min', dur:221, plays:298700,  paidTotal:2389600,  year:2025 },
   { id:'t6',  title:'Aleluia na Banda',     artistId:'a6', genre:'gospel',    bpm:104, key:'E maj', dur:287, plays:176500,  paidTotal:1412000,  year:2026 },
-  { id:'t7',  title:'Maianga às 3h',        artistId:'a7', genre:'amapiano',  bpm:113, key:'B min', dur:356, plays:934800,  paidTotal:7478400,  year:2026 },
+  { id:'t7',  title:'Maianga às 3h',        artistId:'a7', genre:'amapiano',  bpm:113, key:'B min', dur:356, plays:934800,  paidTotal:7478400,  year:2026, ai:['Instrumentação'] },
   { id:'t8',  title:'Maré de Cabinda',      artistId:'a8', genre:'zouk',      bpm:98,  key:'A min', dur:249, plays:203900,  paidTotal:1631200,  year:2025 },
   { id:'t9',  title:'Toque de Recolher',    artistId:'a1', genre:'kuduro',    bpm:145, key:'E min', dur:187, plays:876400,  paidTotal:7011200,  year:2025 },
   { id:'t10', title:'Semba do Adeus',       artistId:'a2', genre:'semba',     bpm:108, key:'G min', dur:274, plays:451200,  paidTotal:3609600,  year:2024 },
   { id:'t11', title:'Teu Perfume',          artistId:'a4', genre:'kizomba',   bpm:88,  key:'C# min',dur:281, plays:1567800, paidTotal:12542400, year:2025 },
   { id:'t12', title:'Planalto Groove',      artistId:'a3', genre:'afrohouse', bpm:124, key:'D min', dur:312, plays:389100,  paidTotal:3112800,  year:2026 },
   { id:'t13', title:'Verso Livre',          artistId:'a5', genre:'rap',       bpm:90,  key:'F min', dur:204, plays:167300,  paidTotal:1338400,  year:2026 },
-  { id:'t14', title:'Kuduro na Kianda',     artistId:'a7', genre:'amapiano',  bpm:112, key:'G# min',dur:329, plays:645200,  paidTotal:5161600,  year:2026 },
+  { id:'t14', title:'Kuduro na Kianda',     artistId:'a7', genre:'amapiano',  bpm:112, key:'G# min',dur:329, plays:645200,  paidTotal:5161600,  year:2026, ai:['Voz','Masterização'] },
   { id:'t15', title:'Nzambi Connect',       artistId:'a6', genre:'gospel',    bpm:100, key:'A maj', dur:265, plays:98400,   paidTotal:787200,   year:2026 },
   { id:'t16', title:'Luanda Sunset',        artistId:'a8', genre:'zouk',      bpm:95,  key:'E min', dur:238, plays:312600,  paidTotal:2500800,  year:2026 },
 ];
@@ -94,6 +94,9 @@ const ADMIN_FRAUD = [
   { id:'f3', type:'Emulador',        target:'device fp_ax91', score:0.88, action:'dispositivo bloqueado' },
   { id:'f4', type:'VPN abusiva',     target:'ASN datacenter', score:0.74, action:'plays não faturáveis' },
 ];
+
+const FOUNDER_LIMIT = 100;      // primeiros 100 artistas: inscrição grátis + Premium oferecido
+const FOUNDER_COUNT = 63;       // já registados (demo)
 
 const AO = new Intl.NumberFormat('pt-PT');
 const fmtKz = v => AO.format(Math.round(v)) + ' Kz';

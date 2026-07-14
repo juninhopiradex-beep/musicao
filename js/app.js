@@ -28,8 +28,17 @@ const S = {
   dataMode: store.get('dataMode', 'normal'),    // economica | normal | alta
   cardPool: store.get('cardPool', []),          // cartões de recarga gerados pelo admin
   artistProfile: store.get('artistProfile', null), // perfil do artista registado (onboarding)
+  liked: store.get('liked', []),                // ids de faixas com gosto
+  playlists: store.get('playlists', [            // playlists do utilizador
+    { id:'pl_fav', nome:'Favoritas', tracks:[] },
+  ]),
+  recent: store.get('recent', []),              // histórico recente (ids)
+  authed: store.get('authed', false),           // sessão iniciada (conta criada / login)
+  planName: store.get('planName', null),         // 'Semanal' | 'Mensal'
+  fraudLog: store.get('fraudLog', []),           // alertas de segurança para admin
+  previewMode: false,                            // reprodução atual é preview de 30s?
 };
-const persist = () => { store.set('role', S.role); store.set('balance', S.balance); store.set('owned', S.owned); store.set('txs', S.txs); store.set('pendingUploads', S.pendingUploads); store.set('followed', S.followed); store.set('premiumUntil', S.premiumUntil); store.set('dlUsed', S.dlUsed); store.set('dataMode', S.dataMode); store.set('cardPool', S.cardPool); store.set('artistProfile', S.artistProfile); };
+const persist = () => { store.set('role', S.role); store.set('balance', S.balance); store.set('owned', S.owned); store.set('txs', S.txs); store.set('pendingUploads', S.pendingUploads); store.set('followed', S.followed); store.set('premiumUntil', S.premiumUntil); store.set('dlUsed', S.dlUsed); store.set('dataMode', S.dataMode); store.set('cardPool', S.cardPool); store.set('artistProfile', S.artistProfile); store.set('liked', S.liked); store.set('playlists', S.playlists); store.set('recent', S.recent); store.set('authed', S.authed); store.set('planName', S.planName); store.set('fraudLog', S.fraudLog); };
 const isPremium = () => S.premiumUntil && new Date(S.premiumUntil) > new Date();
 const dlLeft = () => Math.max(0, PREMIUM_DL_LIMIT - S.dlUsed);
 const renewDate = () => S.premiumUntil ? new Date(S.premiumUntil).toLocaleDateString('pt-PT') : '—';
@@ -56,19 +65,20 @@ function validarBI_AO(raw){
 function fmtIBAN(s){ return (s || '').replace(/\s+/g, '').toUpperCase().replace(/(.{4})/g, '$1 ').trim(); }
 
 const PRICE_STREAM = 10, PRICE_DL = 100, FEE_UPLOAD = 1000, ARTIST_SHARE = 0.8;
-const PREMIUM_PRICE = 25000;                 // subscrição mensal (AKZ)
-const PREMIUM_DL_LIMIT = 25;                 // downloads incluídos por ciclo mensal
-const LOW_BALANCE = 200;                     // limiar de aviso de saldo baixo (AKZ)
-const RECARGAS = [500, 1000, 2000, 5000, 10000];
+const PREMIUM_PRICE = 10000;                  // plano mensal (AKZ) — atualizado
+const PLAN_WEEK = 2500, PLAN_MONTH = 10000;  // planos de subscrição
+const PLAN_WEEK_DAYS = 7, PLAN_MONTH_DAYS = 30;
+const PREVIEW_SEC = 30;                       // escuta gratuita (preview) para não-autenticados
+const PREMIUM_DL_LIMIT = 25;                  // downloads incluídos por ciclo mensal
+const LOW_BALANCE = 200;                      // limiar de aviso de saldo baixo (AKZ)
+const RECARGAS = [500, 1000, 2000];
 const CARD_META = {                          // identidade visual dos cartões de recarga
   500:   { nome:'Recarga Essencial', tag:'Para começar a ouvir',                cls:'essencial' },
   1000:  { nome:'Recarga Play',      tag:'Opção económica para o dia a dia',    cls:'play' },
-  2000:  { nome:'Recarga Mix',       tag:'Mais música, mais liberdade.',        cls:'mix' },
-  5000:  { nome:'Recarga Premium',   tag:'Ideal para quem ouve música todos os dias.', cls:'premium' },
-  10000: { nome:'Recarga Max',       tag:'Máxima liberdade para ouvir e descarregar.', cls:'max' },
+  2000:  { nome:'Recarga Mix',       tag:'Mais música, mais liberdade.',        cls:'max' },
 };
 const MSG_SEM_SALDO = 'O seu saldo é insuficiente. Faça uma recarga para continuar a ouvir ou descarregar músicas.';
-const CHARGE_AFTER_SEC = 5; // demo — pré-escuta gratuita (30 s em produção)
+const CHARGE_AFTER_SEC = 5; // demo: cobra aos 5s de escuta paga (30s em produção)
 
 /* ---------- helpers UI ---------- */
 const $ = sel => document.querySelector(sel);
@@ -119,28 +129,42 @@ function playTrack(trackId){
   const approved = TRACKS.slice();
   S.queue = approved;
   S.qIdx = approved.findIndex(t => t.id === trackId);
+  S.recent = [trackId, ...S.recent.filter(id => id !== trackId)].slice(0, 20);
+  persist();
   startPlayback();
 }
 function startPlayback(){
   const t = S.queue[S.qIdx];
   if(!t) return;
+  S.previewMode = !S.authed;   // visitante não autenticado → modo preview
   S.isPlaying = true; S.elapsed = 0; S.charged = false;
   AudioEngine.play(t);
   renderPlayerBar(t);
   clearInterval(S.tickTimer);
   S.tickTimer = setInterval(tick, 1000);
   document.querySelectorAll('.trow').forEach(r => r.classList.toggle('playing', r.dataset.tid === t.id));
+  if(S.previewMode) toast('Pré-visualização · <b>30s</b> grátis. Cria conta para ouvires na íntegra.');
 }
 function tick(){
   const t = S.queue[S.qIdx];
   if(!t || !S.isPlaying) return;
   S.elapsed++;
+
+  // ---- MODO PREVIEW: visitante anónimo, corta aos 30s, sem cobrança nem remuneração ----
+  if(S.previewMode){
+    updateProgress(t, PREVIEW_SEC);
+    if(S.elapsed >= PREVIEW_SEC){
+      pausePlayback();
+      openPreviewGate(t);
+    }
+    return;
+  }
+
+  // ---- REPRODUÇÃO PAGA / SUBSCRIÇÃO ----
   if(!S.charged && S.elapsed >= CHARGE_AFTER_SEC){
     S.charged = true;
     const share = PRICE_STREAM * ARTIST_SHARE;
     if(isPremium()){
-      // Plano Premium: consumo ilimitado, sem débito da wallet.
-      // O play conta na mesma e o artista recebe (fundo Premium).
       S.paidLive[t.id] = (S.paidLive[t.id] || 0) + share;
       toast('Play Premium ▪ ilimitado · <b>' + share + ' Kz</b> para ' + artistOf(t.artistId).name, 'ok');
       updateTicker(t);
@@ -152,6 +176,29 @@ function tick(){
   }
   updateProgress(t);
   if(S.elapsed >= t.dur) nextTrack();
+}
+
+function openPreviewGate(t){
+  openModal('<div style="text-align:center">' +
+    '<div style="font-size:34px;margin-bottom:8px">🎧</div>' +
+    '<h3>Gostaste do que ouviste?</h3>' +
+    '<p>Ouviste os primeiros <b>30 segundos</b> de "' + t.title + '". Para continuares a ouvir na íntegra — e apoiares ' + artistOf(t.artistId).name + ' — cria conta ou inicia sessão.</p>' +
+    '<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">' +
+      '<button class="btn btn-red" id="pgCreate">Criar conta grátis</button>' +
+      '<button class="btn btn-ghost" id="pgLogin">Iniciar sessão</button>' +
+      '<button class="btn btn-gold" id="pgPlans">Ver planos e recargas</button>' +
+    '</div>' +
+    '<button class="btn btn-ghost btn-sm" style="margin-top:14px" onclick="closeModal()">Continuar a explorar</button>' +
+  '</div>');
+  $('#pgCreate').addEventListener('click', () => { closeModal(); doLogin('criada'); });
+  $('#pgLogin').addEventListener('click', () => { closeModal(); doLogin('iniciada'); });
+  $('#pgPlans').addEventListener('click', () => { closeModal(); doLogin('iniciada'); location.hash = '#/wallet'; });
+}
+function doLogin(verbo){
+  S.authed = true; persist();
+  document.body.dataset.authed = 'yes';
+  toast('Sessão ' + verbo + '! Bem-vindo à Music AO. Já podes ouvir na íntegra.', 'ok');
+  render();
 }
 function pausePlayback(){
   S.isPlaying = false; AudioEngine.pause();
@@ -185,9 +232,10 @@ function updateTicker(t){
   const labels = { economica:'Económica', normal:'Normal', alta:'Alta' };
   const el2 = $('#tickValue'); if(el2) el2.textContent = labels[S.dataMode] || 'Normal';
 }
-function updateProgress(t){
-  $('#pTime').textContent = fmtDur(S.elapsed);
-  $('#pFill').style.width = Math.min(100, S.elapsed / t.dur * 100) + '%';
+function updateProgress(t, limit){
+  const total = limit || t.dur;
+  $('#pTime').textContent = fmtDur(S.elapsed) + (limit ? ' / 0:' + PREVIEW_SEC + ' (preview)' : '');
+  $('#pFill').style.width = Math.min(100, S.elapsed / total * 100) + '%';
 }
 $('#btnPlay').addEventListener('click', () => S.isPlaying ? pausePlayback() : resumePlayback());
 $('#btnNext').addEventListener('click', nextTrack);
@@ -270,7 +318,7 @@ function trackCard(t){
   const a = artistOf(t.artistId), g = genreOf(t.genre);
   return '<div class="card-track" data-play="' + t.id + '">' +
     '<div class="cover" style="' + coverStyle(t.genre) + '"><span class="genre-tag">' + g.name + '</span></div>' +
-    '<div class="t-title">' + t.title + '</div>' +
+    '<div class="t-title">' + t.title + (t.ai ? ' <span class="ai-badge">IA</span>' : '') + '</div>' +
     '<div class="t-artist">' + a.name + '</div>' +
     '<div class="t-paid">' + fmtN(t.plays) + ' plays</div>' +
     '<button class="play-fab" aria-label="Reproduzir ' + t.title + '">▶</button>' +
@@ -278,11 +326,16 @@ function trackCard(t){
 }
 function trackRow(t, i){
   const a = artistOf(t.artistId);
+  const isLiked = S.liked.includes(t.id);
   return '<div class="trow" data-tid="' + t.id + '" data-play="' + t.id + '">' +
     '<span class="idx">' + String(i + 1).padStart(2, '0') + '</span>' +
     '<div class="mini-cover" style="' + coverStyle(t.genre) + '"></div>' +
-    '<div><div class="tt">' + t.title + '</div><div class="ta">' + a.name + '</div></div>' +
+    '<div><div class="tt">' + t.title + (t.ai ? ' <span class="ai-badge" title="Contém elementos gerados por IA: ' + t.ai.join(', ') + '">IA</span>' : '') + '</div><div class="ta">' + a.name + '</div></div>' +
     '<span class="tpaid">' + fmtN(t.plays) + ' plays</span>' +
+    '<span class="trow-actions">' +
+      '<button class="ico-btn' + (isLiked ? ' liked' : '') + '" data-like="' + t.id + '" title="Gosto" aria-label="Gosto">' + (isLiked ? '♥' : '♡') + '</button>' +
+      '<button class="ico-btn" data-addpl="' + t.id + '" title="Adicionar a playlist" aria-label="Adicionar a playlist">＋</button>' +
+    '</span>' +
     '<span class="tdur">' + fmtDur(t.dur) + '</span>' +
   '</div>';
 }
@@ -358,17 +411,22 @@ function viewExplorar(params){
   const gid = params[0];
   if(gid){
     const g = genreOf(gid);
-    const list = TRACKS.filter(t => t.genre === gid);
-    return '<div class="section"><div class="eyebrow">Género</div>' +
-      '<h1 class="h-display" style="font-size:32px;margin-bottom:24px">' + g.name + '</h1>' +
+    const list = TRACKS.filter(t => t.genre === gid).sort((a, b) => b.plays - a.plays);
+    return '<div class="section"><div class="eyebrow">Top Chart · ' + g.name + '</div>' +
+      '<h1 class="h-display" style="font-size:32px;margin-bottom:6px">Top ' + g.name + ' 🇦🇴</h1>' +
+      '<p style="color:var(--muted);margin-bottom:24px">As faixas mais ouvidas de ' + g.name + ' em Angola, por número de plays.</p>' +
       '<div class="tracklist">' + list.map(trackRow).join('') + '</div></div>';
   }
   return '' +
   '<h1 class="h-display" style="font-size:30px;margin-bottom:28px">Explorar</h1>' +
-  '<div class="section"><div class="section-head"><h2>Géneros</h2></div>' +
-    '<div class="grid grid-genres">' + GENRES.map(g =>
-      '<div class="card-genre" style="background:linear-gradient(135deg,' + g.c1 + ',' + g.c2 + ')" data-goto="#/explorar/' + g.id + '">' + g.name + '</div>'
-    ).join('') + '</div></div>' +
+  '<div class="section"><div class="section-head"><h2>Top Charts por estilo</h2><span style="font-size:12px;color:var(--muted)">os mais ouvidos de Angola</span></div>' +
+    '<div class="grid grid-genres">' + GENRES.map(g => {
+      const top = TRACKS.filter(t => t.genre === g.id).sort((a, b) => b.plays - a.plays)[0];
+      return '<div class="chart-card" style="background:linear-gradient(135deg,' + g.c1 + ',' + g.c2 + ')" data-goto="#/explorar/' + g.id + '">' +
+        '<div class="chart-badge">TOP ' + g.name.toUpperCase() + '</div>' +
+        (top ? '<div class="chart-top">#1 ' + top.title + '<span>' + fmtN(top.plays) + ' plays</span></div>' : '') +
+      '</div>';
+    }).join('') + '</div></div>' +
   '<div class="section"><div class="section-head"><h2>Streams por província</h2></div>' +
     '<div class="panel"><div class="hbars">' + PROVINCES_TOP.map(p =>
       '<div class="hbar"><span>' + p.name + '</span><div class="hb-track"><div class="hb-fill" style="width:' + p.pct + '%"></div></div><span class="hb-val">' + p.streams + '</span></div>'
@@ -416,7 +474,9 @@ function viewArtista(params){
         '<button class="btn btn-red btn-sm" data-follow="' + a.id + '">' + (following ? 'A seguir ✓' : '+ Seguir') + '</button>' +
         (list.length ? '<button class="btn btn-ghost btn-sm" data-play="' + list[0].id + '">▶ Reproduzir</button>' : '') +
         '<button class="btn btn-gold btn-sm" data-tip="' + a.id + '">♥ Apoiar o artista</button>' +
+        '<a class="btn btn-ghost btn-sm" href="#/link/' + a.id + '">↗ Página / QR</a>' +
       '</div>' +
+      socialIcons(a.socials || (S.artistProfile && S.artistProfile.artistico === a.name ? S.artistProfile.socials : null)) +
     '</div>' +
   '</div>' +
   '<div class="section"><div class="section-head"><h2>Discografia</h2></div>' +
@@ -436,31 +496,41 @@ function viewWallet(){
       (premium ? ' <span style="color:var(--gold)">· com Premium, plays e downloads são ilimitados</span>' : '') + '</p>' +
   '</div>' +
 
-  /* ---- Modelo B — Subscrição Premium ---- */
-  '<div class="section"><div class="section-head"><h2>Plano Premium</h2><span style="font-size:12px;color:var(--muted)">Modelo B — subscrição</span></div>' +
-    '<div class="panel" style="background:radial-gradient(600px 200px at 90% -30%,var(--gold-soft),transparent 60%),var(--surface);border-color:rgba(242,176,30,.3)">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap">' +
-        '<div style="flex:1;min-width:200px">' +
-          '<div style="font-family:var(--font-display);font-weight:700;font-size:22px">' + fmtN(PREMIUM_PRICE) + ' Kz<span style="font-size:14px;color:var(--muted);font-weight:400"> / mês</span></div>' +
-          '<ul style="list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:7px;font-size:13.5px;color:var(--muted)">' +
-            '<li>✓ Streaming ilimitado durante o período ativo</li>' +
-            '<li>✓ <b style="color:var(--text)">' + PREMIUM_DL_LIMIT + ' downloads</b> incluídos por ciclo mensal</li>' +
-            '<li>✓ Downloads extra por ' + PRICE_DL + ' AKZ via saldo</li>' +
-            '<li>✓ Os artistas continuam a receber por cada play e download</li>' +
-            '<li>✓ Renovação manual ou automática · cancela quando quiseres</li>' +
-          '</ul>' +
+  /* ---- Modelo B — Subscrição (Semanal / Mensal) ---- */
+  '<div class="section"><div class="section-head"><h2>Planos de subscrição</h2><span style="font-size:12px;color:var(--muted)">Modelo B</span></div>' +
+    (premium ?
+      '<div class="panel" style="background:radial-gradient(600px 200px at 90% -30%,var(--gold-soft),transparent 60%),var(--surface);border-color:rgba(242,176,30,.3)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap">' +
+          '<div style="flex:1;min-width:200px">' +
+            '<div style="font-family:var(--font-display);font-weight:700;font-size:20px">' + (S.planName || 'Plano') + ' ativo</div>' +
+            '<div style="font-size:13px;color:var(--muted);margin-top:6px">Streaming ilimitado · ' + PREMIUM_DL_LIMIT + ' downloads por ciclo</div>' +
+            '<div style="font-size:13px;margin-top:10px">Downloads utilizados: <b>' + S.dlUsed + ' de ' + PREMIUM_DL_LIMIT + '</b> · Disponíveis: <b style="color:var(--gold)">' + dlLeft() + '</b></div>' +
+          '</div>' +
+          '<div style="text-align:right">' +
+            '<div class="pill ' + (premiumDias <= 2 ? 'warn' : 'ok') + '" style="margin-bottom:10px">Faltam ' + premiumDias + ' dias · renova em ' + renewDate() + '</div>' +
+            (premiumDias <= 2 ? '<div style="font-size:12px;color:var(--red);margin-bottom:10px">⚠ A tua subscrição está quase a expirar. Renova para não perder o acesso premium.</div>' : '') +
+            '<br><button class="btn btn-ghost btn-sm" id="btnCancelPremium" style="border-color:var(--red);color:var(--red)">Cancelar renovação</button>' +
+          '</div>' +
         '</div>' +
-        '<div style="text-align:right">' +
-          (premium ?
-            '<div class="pill ok" style="margin-bottom:10px">Ativo · renova em ' + renewDate() + '</div>' +
-            '<div style="font-size:13px;margin-bottom:4px">Downloads utilizados: <b>' + S.dlUsed + ' de ' + PREMIUM_DL_LIMIT + '</b></div>' +
-            '<div style="font-size:13px;color:var(--gold);margin-bottom:12px">Disponíveis: <b>' + dlLeft() + '</b></div>' +
-            '<div class="hb-track" style="width:180px;margin-left:auto;margin-bottom:14px"><div class="hb-fill" style="width:' + (S.dlUsed / PREMIUM_DL_LIMIT * 100) + '%"></div></div>' +
-            '<button class="btn btn-ghost btn-sm" id="btnCancelPremium" style="border-color:var(--red);color:var(--red)">Cancelar subscrição</button>' :
-            '<button class="btn btn-gold" id="btnPremium">Subscrever plano mensal</button>') +
+      '</div>'
+    :
+      '<div class="plan-grid">' +
+        '<div class="plan-card" data-plan="week">' +
+          '<div class="plan-name">Plano Semanal</div>' +
+          '<div class="plan-price">' + fmtN(PLAN_WEEK) + '<span> AKZ</span></div>' +
+          '<div class="plan-per">por ' + PLAN_WEEK_DAYS + ' dias</div>' +
+          '<ul class="plan-feats"><li>✓ Streaming ilimitado 7 dias</li><li>✓ ' + PREMIUM_DL_LIMIT + ' downloads incluídos</li><li>✓ Ideal para experimentar</li></ul>' +
+          '<button class="btn btn-ghost btn-sm plan-btn" data-plan="week">Subscrever semanal</button>' +
         '</div>' +
-      '</div>' +
-    '</div>' +
+        '<div class="plan-card featured" data-plan="month">' +
+          '<div class="plan-badge">Mais popular</div>' +
+          '<div class="plan-name">Plano Mensal</div>' +
+          '<div class="plan-price">' + fmtN(PLAN_MONTH) + '<span> AKZ</span></div>' +
+          '<div class="plan-per">por ' + PLAN_MONTH_DAYS + ' dias</div>' +
+          '<ul class="plan-feats"><li>✓ Streaming ilimitado 30 dias</li><li>✓ ' + PREMIUM_DL_LIMIT + ' downloads incluídos</li><li>✓ Melhor valor por dia</li></ul>' +
+          '<button class="btn btn-gold btn-sm plan-btn" data-plan="month">Subscrever mensal</button>' +
+        '</div>' +
+      '</div>') +
   '</div>' +
 
   /* ---- Modelo A — Cartões de recarga ---- */
@@ -528,10 +598,26 @@ function nowStamp(){
    Nome completo, BI e IBAN obrigatórios e validados. Foto obrigatória.
    ============================================================ */
 function viewArtistOnboarding(){
+  const vagas = FOUNDER_LIMIT - FOUNDER_COUNT;
+  const founder = vagas > 0;
   return '' +
   '<div class="eyebrow">Portal do artista · registo</div>' +
   '<h1 class="h-display" style="font-size:30px;margin-bottom:8px">Cria o teu perfil de artista</h1>' +
-  '<p style="color:var(--muted);margin-bottom:24px">Antes de publicares música, precisamos de validar a tua identidade e a tua conta bancária — é assim que garantimos que recebes os teus pagamentos. Os campos com * são obrigatórios.</p>' +
+  '<p style="color:var(--muted);margin-bottom:20px">Antes de publicares música, precisamos de validar a tua identidade e a tua conta bancária — é assim que garantimos que recebes os teus pagamentos. Os campos com * são obrigatórios.</p>' +
+
+  (founder ?
+    '<div class="founder-banner">' +
+      '<div class="founder-badge">★ ARTISTA FUNDADOR</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:17px;margin-bottom:4px">Inscrição gratuita para os primeiros ' + FOUNDER_LIMIT + ' artistas</div>' +
+        '<div style="font-size:13px;color:var(--muted)">Sem taxa de inscrição (10.000 Kz) <b style="color:var(--gold)">e 1 mês de plano Premium oferecido</b>. Faz parte dos fundadores da Music AO.</div>' +
+      '</div>' +
+      '<div style="text-align:center;min-width:96px">' +
+        '<div style="font-family:var(--font-display);font-weight:900;font-size:30px;color:var(--gold);line-height:1">' + vagas + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">vagas restantes</div>' +
+        '<div class="founder-track"><div class="founder-fill" style="width:' + (FOUNDER_COUNT / FOUNDER_LIMIT * 100) + '%"></div></div>' +
+      '</div>' +
+    '</div>' : '') +
 
   '<div class="panel"><div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">' +
     '<div style="text-align:center">' +
@@ -552,8 +638,19 @@ function viewArtistOnboarding(){
     '<div class="field" style="grid-column:1 / -1"><label for="obIBAN">IBAN *</label><input id="obIBAN" type="text" placeholder="AO06 0040 0000 1089 4244 10175" style="text-transform:uppercase;font-family:monospace"><div class="valid-msg" id="msgIBAN"></div></div>' +
     field('Titular da conta', 'obTitular', 'text', 'Nome do titular') +
   '</div>' +
-  '<div class="fee-note" style="margin-top:20px">◆ Taxa de inscrição única: <b>' + fmtN(10000) + ' Kz</b> — debitada da tua wallet. Saldo atual: <b>' + fmtKz(S.balance) + '</b>. Após validação, ficas elegível para receber pagamentos.</div>' +
-  '<button class="btn btn-red" id="btnRegisterArtist" style="margin-top:6px">Concluir registo e pagar ' + fmtN(10000) + ' Kz</button>' +
+  '<h3 style="margin-top:20px">Redes sociais <span style="font-size:12px;color:var(--muted);font-weight:400">(opcional)</span></h3>' +
+  '<div class="form-grid">' +
+    field('Facebook', 'obFacebook', 'text', 'https://facebook.com/...') +
+    field('Instagram', 'obInstagram', 'text', 'https://instagram.com/...') +
+    field('TikTok', 'obTiktok', 'text', 'https://tiktok.com/@...') +
+    field('YouTube', 'obYoutube', 'text', 'https://youtube.com/@...') +
+    field('LinkedIn', 'obLinkedin', 'text', 'https://linkedin.com/in/...') +
+  '</div>' +
+  (founder ?
+    '<div class="fee-note" style="margin-top:20px;background:var(--gold-soft);border-color:rgba(242,176,30,.3)">★ Como <b>Artista Fundador</b>, a tua inscrição é <b>gratuita</b> e recebes <b>1 mês de Premium</b>. Concluis o registo sem qualquer débito.</div>' +
+    '<button class="btn btn-gold" id="btnRegisterArtist" style="margin-top:6px">Concluir registo grátis (Fundador)</button>' :
+    '<div class="fee-note" style="margin-top:20px">◆ Taxa de inscrição única: <b>' + fmtN(10000) + ' Kz</b> — debitada da tua wallet. Saldo atual: <b>' + fmtKz(S.balance) + '</b>. Após validação, ficas elegível para receber pagamentos.</div>' +
+    '<button class="btn btn-red" id="btnRegisterArtist" style="margin-top:6px">Concluir registo e pagar ' + fmtN(10000) + ' Kz</button>') +
   '</div>';
 }
 
@@ -587,13 +684,24 @@ function viewUpload(){
     field('Tags', 'upTags', 'text', 'separadas por vírgula') +
   '</div>' +
   '<div class="field" style="margin-top:16px"><label>Letra</label><textarea id="upLyrics" rows="3" placeholder="Cola aqui a letra da faixa"></textarea></div>' +
+  '<div class="ai-declare" style="margin-top:18px;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface2)">' +
+    '<div style="font-weight:600;font-size:13.5px;margin-bottom:10px">Declaração de uso de Inteligência Artificial</div>' +
+    '<p style="color:var(--muted);font-size:12.5px;margin-bottom:12px">A transparência é obrigatória. Indica se esta faixa usou IA — voz, instrumentação ou masterização. A declaração falsa pode levar à remoção do conteúdo.</p>' +
+    '<label style="display:flex;gap:10px;align-items:center;font-size:13.5px;cursor:pointer;margin-bottom:8px"><input type="checkbox" id="upAI"> Esta faixa usou geração por IA</label>' +
+    '<div id="upAIType" hidden style="display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);padding-left:26px">' +
+      '<label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" class="aiKind" value="Voz"> Voz</label>' +
+      '<label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" class="aiKind" value="Instrumentação"> Instrumentação</label>' +
+      '<label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" class="aiKind" value="Masterização"> Masterização</label>' +
+      '<label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" class="aiKind" value="Letra"> Letra</label>' +
+    '</div>' +
+  '</div>' +
   '</div>' +
   '<div class="fee-note">◆ Taxa de publicação: <b>' + fmtN(FEE_UPLOAD) + ' Kz</b> — debitada da tua wallet no envio. Saldo atual: <b>' + fmtKz(S.balance) + '</b>. A faixa entra em moderação e ficas notificado da decisão.</div>' +
   '<button class="btn btn-red" id="btnPublish">Publicar e pagar ' + fmtN(FEE_UPLOAD) + ' Kz</button>' +
   (S.pendingUploads.length ?
     '<div class="section" style="margin-top:40px"><div class="section-head"><h2>Os meus envios</h2></div>' +
     '<div class="panel"><table class="data"><thead><tr><th>Faixa</th><th>Género</th><th>Estado</th></tr></thead><tbody>' +
-    S.pendingUploads.map(u => '<tr><td>' + u.title + '</td><td>' + u.genre + '</td><td><span class="pill ' + (u.status === 'aprovada' ? 'ok' : u.status === 'rejeitada' ? 'bad' : 'warn') + '">' + u.status + '</span></td></tr>').join('') +
+    S.pendingUploads.map(u => '<tr><td>' + u.title + '</td><td>' + u.genre + '</td><td>' + statusPill(u.status) + (u.flagged ? ' <span class="ai-badge" style="color:var(--red);border-color:var(--red);background:rgba(224,18,44,.1)">⚠</span>' : '') + '</td></tr>').join('') +
     '</tbody></table></div></div>' : '');
 }
 function field(label, id, type, ph){
@@ -614,6 +722,14 @@ function viewDashboard(){
   '<div class="eyebrow">Painel do artista · ' + a.name + '</div>' +
   '<h1 class="h-display" style="font-size:30px;margin-bottom:22px">A tua contabilidade</h1>' +
 
+  /* Totais da plataforma */
+  '<div class="totals-grid">' +
+    '<div class="total-card"><div class="total-ico">♫</div><div class="total-num">' + fmtN(TRACKS.length) + '</div><div class="total-lbl">Músicas na plataforma</div></div>' +
+    '<div class="total-card"><div class="total-ico">🎤</div><div class="total-num">' + fmtN(ARTISTS.length) + '</div><div class="total-lbl">Artistas registados</div></div>' +
+    '<div class="total-card"><div class="total-ico">≣</div><div class="total-num">' + fmtN(S.playlists.length) + '</div><div class="total-lbl">Playlists criadas</div></div>' +
+    '<div class="total-card"><div class="total-ico">▲</div><div class="total-num">' + fmtN(mine.length + S.pendingUploads.length) + '</div><div class="total-lbl">As tuas faixas</div></div>' +
+  '</div>' +
+
   /* Contador financeiro (pendente) vs Histórico */
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:16px" class="dash-cols">' +
     '<div class="panel" style="background:radial-gradient(500px 180px at 90% -30%,var(--gold-soft),transparent 60%);border-color:rgba(242,176,30,.3)">' +
@@ -633,7 +749,7 @@ function viewDashboard(){
   '<div class="kpis">' +
     kpi('Ganhos do mês', fmtKz(ARTIST_REVENUE_SERIES[ARTIST_REVENUE_SERIES.length - 1].v), '+18% vs. mês anterior') +
     kpi('Ganhos totais (12 m)', fmtKz(totalRev), '') +
-    kpi('Faixas publicadas', String(mine.length + S.pendingUploads.filter(u => u.status === 'aprovada').length), S.pendingUploads.filter(u => u.status === 'em moderação').length + ' em moderação') +
+    kpi('Faixas publicadas', String(mine.length + S.pendingUploads.filter(u => u.status === 'aprovada').length), S.pendingUploads.filter(u => ['Em Validação','Em Análise de Direitos','Em Upload','em moderação'].includes(u.status)).length + ' em análise') +
     kpi('Ranking nacional', '#3', '▲ 2 posições', 'red') +
   '</div>' +
   '<div class="panel"><h3>Receita mensal (AKZ)</h3>' + revenueChart(ARTIST_REVENUE_SERIES) + '</div>' +
@@ -650,7 +766,7 @@ function viewDashboard(){
   '<div class="panel"><h3>As tuas faixas</h3><table class="data"><thead>' +
     '<tr><th>Faixa</th><th>Plays</th><th>Downloads</th><th>Pago (total)</th><th>Estado</th></tr></thead><tbody>' +
     mine.map(t => '<tr><td><b>' + t.title + '</b></td><td>' + fmtN(t.plays) + '</td><td>' + fmtN(Math.round(t.plays * 0.04)) + '</td><td style="color:var(--gold)">' + fmtKz(t.paidTotal) + '</td><td><span class="pill ok">publicada</span></td></tr>').join('') +
-    S.pendingUploads.map(u => '<tr><td><b>' + u.title + '</b></td><td>—</td><td>—</td><td>—</td><td><span class="pill ' + (u.status === 'aprovada' ? 'ok' : u.status === 'rejeitada' ? 'bad' : 'warn') + '">' + u.status + '</span></td></tr>').join('') +
+    S.pendingUploads.map(u => '<tr><td><b>' + u.title + '</b></td><td>—</td><td>—</td><td>—</td><td>' + statusPill(u.status) + '</td></tr>').join('') +
   '</tbody></table></div>';
 }
 
@@ -682,6 +798,12 @@ function viewAdmin(){
     '<table class="data"><thead><tr><th>Tipo</th><th>Alvo</th><th>Score</th><th>Ação</th></tr></thead><tbody>' +
     ADMIN_FRAUD.map(f => '<tr><td><span class="pill bad">' + f.type + '</span></td><td>' + f.target + '</td><td>' + f.score.toFixed(2) + '</td><td style="color:var(--muted)">' + f.action + '</td></tr>').join('') +
     '</tbody></table></div>' +
+  (S.fraudLog && S.fraudLog.length ?
+    '<div class="panel" style="border-color:rgba(224,18,44,.3)"><h3 style="color:var(--red)">⚠ Alertas de segurança de uploads</h3>' +
+    '<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Deteções automáticas em tempo real. Evidências e logs guardados para auditoria.</p>' +
+    '<table class="data"><thead><tr><th>Tipo</th><th>Faixa</th><th>Artista</th><th>Quando</th><th>IP</th></tr></thead><tbody>' +
+    S.fraudLog.slice(0, 10).map(a => '<tr><td><span class="pill bad">' + a.tipo + '</span></td><td>' + a.faixa + '</td><td>' + a.artista + '</td><td style="color:var(--muted)">' + a.quando + '</td><td style="color:var(--muted);font-family:monospace">' + a.ip + '</td></tr>').join('') +
+    '</tbody></table></div>' : '') +
   '<div class="panel"><h3>Gestão de Recargas — cartões</h3>' +
     '<p style="color:var(--muted);font-size:13px;margin-bottom:14px">Gera lotes de cartões com código único, número de série e QR. Estados: Criado → Disponível → Vendido → Ativado/Utilizado · Bloqueado · Cancelado. Um cartão nunca pode ser usado duas vezes.</p>' +
     '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">' +
@@ -748,6 +870,9 @@ function viewPagamentos(){
   '<div style="display:flex;gap:12px;flex-wrap:wrap">' +
     '<button class="btn btn-ghost" id="psxPreview">Visualizar totais</button>' +
     '<button class="btn btn-gold" id="psxGenerate">Gerar e exportar ficheiro PSX</button>' +
+    '<button class="btn btn-ghost" id="psxCsv">Exportar CSV</button>' +
+    '<button class="btn btn-ghost" id="psxXls">Exportar Excel</button>' +
+    '<button class="btn btn-ghost" id="psxPdf">Exportar PDF</button>' +
   '</div>' +
 
   (elegiveis.length === 0 ?
@@ -757,10 +882,154 @@ function viewPagamentos(){
 /* ============================================================
    ROUTER
    ============================================================ */
+/* ============================================================
+   BIBLIOTECA DO OUVINTE — favoritos, playlists, downloads, recentes
+   ============================================================ */
+function viewBiblioteca(){
+  const likedTracks = S.liked.map(id => TRACKS.find(t => t.id === id)).filter(Boolean);
+  const ownedTracks = S.owned.map(id => TRACKS.find(t => t.id === id)).filter(Boolean);
+  const recentTracks = S.recent.map(id => TRACKS.find(t => t.id === id)).filter(Boolean);
+  return '' +
+  '<h1 class="h-display" style="font-size:30px;margin-bottom:8px">A minha biblioteca</h1>' +
+  '<p style="color:var(--muted);margin-bottom:26px">Tudo o que gostas, guardas e descarregas — num só lugar.</p>' +
+
+  '<div class="section"><div class="section-head"><h2>As minhas playlists</h2>' +
+    '<button class="btn btn-ghost btn-sm" id="btnNewPlaylist">+ Nova playlist</button></div>' +
+    '<div class="grid grid-genres">' + S.playlists.map(pl =>
+      '<div class="card-genre" style="background:linear-gradient(135deg,#2b2b38,#14141c)" data-goto="#/playlist/' + pl.id + '">' +
+        pl.nome + '<span style="position:absolute;bottom:10px;right:14px;font-size:11px;opacity:.7;font-family:var(--font-body)">' + pl.tracks.length + ' faixas</span></div>'
+    ).join('') + '</div></div>' +
+
+  (recentTracks.length ? '<div class="section"><div class="section-head"><h2>Ouvidas recentemente</h2></div>' +
+    '<div class="tracklist">' + recentTracks.slice(0, 6).map(trackRow).join('') + '</div></div>' : '') +
+
+  '<div class="section"><div class="section-head"><h2>Favoritas</h2></div>' +
+    (likedTracks.length ? '<div class="tracklist">' + likedTracks.map(trackRow).join('') + '</div>'
+      : '<div class="panel" style="color:var(--muted);text-align:center;padding:32px">Ainda não tens favoritas. Toca no ♥ de uma faixa para a guardares aqui.</div>') + '</div>' +
+
+  '<div class="section"><div class="section-head"><h2>Downloads offline</h2></div>' +
+    (ownedTracks.length ? '<div class="tracklist">' + ownedTracks.map(trackRow).join('') + '</div>'
+      : '<div class="panel" style="color:var(--muted);text-align:center;padding:32px">Ainda não descarregaste nenhuma faixa.</div>') + '</div>';
+}
+
+function viewPlaylist(params){
+  const pl = S.playlists.find(p => p.id === params[0]);
+  if(!pl) return '<p>Playlist não encontrada.</p>';
+  const tracks = pl.tracks.map(id => TRACKS.find(t => t.id === id)).filter(Boolean);
+  return '' +
+  '<div class="eyebrow">Playlist</div>' +
+  '<h1 class="h-display" style="font-size:32px;margin-bottom:6px">' + pl.nome + '</h1>' +
+  '<p style="color:var(--muted);margin-bottom:22px">' + tracks.length + ' faixas' + (pl.id !== 'pl_fav' ? ' · <a href="#" data-delpl="' + pl.id + '" style="color:var(--red)">eliminar playlist</a>' : '') + '</p>' +
+  (tracks.length ? '<div class="tracklist">' + tracks.map(trackRow).join('') + '</div>'
+    : '<div class="panel" style="color:var(--muted);text-align:center;padding:32px">Playlist vazia. Adiciona faixas pelo menu ⋯ de cada música.</div>');
+}
+
+/* ============================================================
+   LANDING PAGE PÚBLICA DO ARTISTA — link único + QR partilhável
+   ============================================================ */
+function viewLink(params){
+  const a = artistOf(params[0]);
+  if(!a) return '<p>Artista não encontrado.</p>';
+  const list = TRACKS.filter(t => t.artistId === a.id);
+  const g = genreOf(a.genre);
+  const url = 'musicao.ao/' + a.id;
+  return '' +
+  '<div style="max-width:440px;margin:0 auto">' +
+    '<div style="text-align:center;padding:32px 24px;border-radius:22px;border:1px solid var(--line);background:radial-gradient(500px 240px at 50% -10%,' + g.c1 + '44,transparent 60%),var(--surface)">' +
+      '<div class="avatar" style="' + avatarStyle(a) + ';width:120px;height:120px;font-size:36px;margin:0 auto 16px">' + initials(a.name) + '</div>' +
+      '<h1 class="h-display" style="font-size:26px">' + a.name + (a.verified ? ' <span style="color:var(--gold)">✔</span>' : '') + '</h1>' +
+      '<p style="color:var(--muted);font-size:13px;margin:6px 0 20px">' + g.name + ' · ' + a.province + ' · Angola</p>' +
+      '<div style="display:flex;flex-direction:column;gap:10px">' +
+        (list.length ? '<button class="btn btn-red" data-play="' + list[0].id + '">▶ Ouvir agora</button>' : '') +
+        '<button class="btn btn-ghost" data-follow="' + a.id + '">+ Seguir</button>' +
+        '<button class="btn btn-gold" data-tip="' + a.id + '">♥ Apoiar o artista</button>' +
+      '</div>' +
+      '<div style="margin-top:24px;display:flex;gap:20px;align-items:center;justify-content:center">' +
+        '<div id="qrBox" style="width:96px;height:96px;background:#fff;border-radius:10px;padding:6px"></div>' +
+        '<div style="text-align:left"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Link único</div>' +
+          '<div style="font-weight:700;font-size:14px">' + url + '</div>' +
+          '<button class="btn btn-ghost btn-sm" id="btnCopyLink" style="margin-top:8px">Copiar link</button></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="section" style="margin-top:24px"><div class="section-head"><h2>Faixas</h2></div>' +
+      '<div class="tracklist">' + list.slice(0, 5).map(trackRow).join('') + '</div></div>' +
+  '</div>';
+}
+
+/* QR decorativo determinístico (padrão estável a partir do texto).
+   Para produção usar uma lib de QR real; aqui basta a leitura visual. */
+function drawQR(box, text){
+  const N = 21, cell = 84 / N;
+  const cv = document.createElement('canvas');
+  cv.width = 84; cv.height = 84; cv.style.width = '100%'; cv.style.height = '100%';
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 84, 84);
+  ctx.fillStyle = '#0B0B0F';
+  // hash do texto → grelha pseudo-aleatória estável
+  let seed = 0; for(let i = 0; i < text.length; i++) seed = (seed * 31 + text.charCodeAt(i)) >>> 0;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const finder = (ox, oy) => {
+    ctx.fillRect(ox * cell, oy * cell, 7 * cell, 7 * cell);
+    ctx.fillStyle = '#fff'; ctx.fillRect((ox + 1) * cell, (oy + 1) * cell, 5 * cell, 5 * cell);
+    ctx.fillStyle = '#0B0B0F'; ctx.fillRect((ox + 2) * cell, (oy + 2) * cell, 3 * cell, 3 * cell);
+  };
+  for(let y = 0; y < N; y++) for(let x = 0; x < N; x++){
+    const inFinder = (x < 8 && y < 8) || (x > N - 9 && y < 8) || (x < 8 && y > N - 9);
+    if(inFinder) continue;
+    if(rnd() > 0.55) ctx.fillRect(x * cell, y * cell, cell, cell);
+  }
+  finder(0, 0); finder(N - 7, 0); finder(0, N - 7);
+  box.innerHTML = ''; box.appendChild(cv);
+}
+
+/* ============================================================
+   CANAL DE VÍDEOS — placeholder extensível para videoclipes
+   ============================================================ */
+function viewVideos(){
+  return '' +
+  '<div class="videos-hero">' +
+    '<div class="videos-emoji">🎬</div>' +
+    '<h1 class="h-display" style="font-size:40px;margin-bottom:10px">Canal de Vídeos</h1>' +
+    '<p style="font-size:18px;color:var(--gold);font-weight:600;margin-bottom:8px">Brevemente disponível.</p>' +
+    '<p style="color:var(--muted);max-width:440px;margin:0 auto 26px">Videoclipes, sessões ao vivo e conteúdo visual dos teus artistas angolanos favoritos — tudo num só sítio. Estamos a preparar algo especial.</p>' +
+    '<div class="countdown" id="vidCountdown">' +
+      '<div class="cd-box"><span id="cdD">--</span><label>dias</label></div>' +
+      '<div class="cd-box"><span id="cdH">--</span><label>horas</label></div>' +
+      '<div class="cd-box"><span id="cdM">--</span><label>min</label></div>' +
+      '<div class="cd-box"><span id="cdS">--</span><label>seg</label></div>' +
+    '</div>' +
+    '<button class="btn btn-gold" id="btnNotifyVideo" style="margin-top:26px">🔔 Quero ser avisado</button>' +
+  '</div>';
+}
+
+function statusPill(status){
+  const map = {
+    'Em Upload': 'warn', 'Em Validação': 'warn', 'Em Análise de Direitos': 'warn',
+    'Aprovada': 'ok', 'Publicada': 'ok',
+    'Rejeitada': 'bad', 'Suspensa': 'bad',
+    // compat. legados
+    'em moderação': 'warn', 'aprovada': 'ok', 'rejeitada': 'bad',
+  };
+  return '<span class="pill ' + (map[status] || 'warn') + '">' + status + '</span>';
+}
+
+function socialIcons(socials){
+  if(!socials) return '';
+  const defs = [
+    ['facebook', 'f', '#1877F2'], ['instagram', '◉', '#E4405F'], ['tiktok', '♪', '#000000'],
+    ['youtube', '▶', '#FF0000'], ['linkedin', 'in', '#0A66C2'],
+  ];
+  const links = defs.filter(([k]) => socials[k]).map(([k, ico, col]) =>
+    '<a href="' + socials[k] + '" target="_blank" rel="noopener" class="social-ico" style="--sc:' + col + '" title="' + k + '">' + ico + '</a>'
+  ).join('');
+  return links ? '<div class="social-row">' + links + '</div>' : '';
+}
+
 const routes = {
   home: viewHome, explorar: viewExplorar, pesquisa: viewPesquisa,
   artista: viewArtista, wallet: viewWallet, upload: viewUpload,
   dashboard: viewDashboard, admin: viewAdmin, pagamentos: viewPagamentos,
+  biblioteca: viewBiblioteca, playlist: viewPlaylist, link: viewLink, videos: viewVideos,
 };
 
 function render(){
@@ -770,11 +1039,37 @@ function render(){
   $('#main').innerHTML = view(params);
   document.querySelectorAll('[data-route]').forEach(a => a.classList.toggle('active', a.dataset.route === route));
   window.scrollTo(0, 0);
-  bindView(route);
+  bindView(route, params);
 }
 
 /* delegação única de cliques no conteúdo principal */
 $('#main').addEventListener('click', e => {
+  // ações que vivem dentro de uma row clicável têm de ser verificadas primeiro
+  const like = e.target.closest('[data-like]');
+  if(like){
+    const id = like.dataset.like;
+    const i = S.liked.indexOf(id);
+    if(i >= 0){ S.liked.splice(i, 1); }
+    else { S.liked.push(id); toast('Adicionada às favoritas ♥', 'ok'); }
+    persist(); render();
+    return;
+  }
+  const addpl = e.target.closest('[data-addpl]');
+  if(addpl){
+    const tid = addpl.dataset.addpl;
+    openModal('<h3>Adicionar a playlist</h3><p>Escolhe onde guardar esta faixa.</p>' +
+      '<div style="display:flex;flex-direction:column;gap:8px">' +
+      S.playlists.map(pl => '<button class="btn btn-ghost btn-sm" data-plpick="' + pl.id + '" style="justify-content:flex-start">' + pl.nome + ' <span style="color:var(--muted);margin-left:auto">' + pl.tracks.length + '</span></button>').join('') +
+      '</div>' +
+      '<div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Fechar</button></div>');
+    document.querySelectorAll('[data-plpick]').forEach(btn => btn.addEventListener('click', () => {
+      const pl = S.playlists.find(p => p.id === btn.dataset.plpick);
+      if(!pl.tracks.includes(tid)){ pl.tracks.push(tid); persist(); toast('Adicionada a <b>' + pl.nome + '</b>.', 'ok'); }
+      else toast('Já está em ' + pl.nome + '.');
+      closeModal();
+    }));
+    return;
+  }
   const play = e.target.closest('[data-play]');
   if(play){ playTrack(play.dataset.play); return; }
   const go = e.target.closest('[data-goto]');
@@ -786,6 +1081,13 @@ $('#main').addEventListener('click', e => {
     if(i >= 0){ S.followed.splice(i, 1); fol.textContent = '+ Seguir'; }
     else { S.followed.push(id); fol.textContent = 'A seguir ✓'; toast('Estás a seguir <b>' + artistOf(id).name + '</b> — vais receber os novos lançamentos.', 'ok'); }
     persist();
+    return;
+  }
+  const delpl = e.target.closest('[data-delpl]');
+  if(delpl){
+    e.preventDefault();
+    S.playlists = S.playlists.filter(p => p.id !== delpl.dataset.delpl);
+    persist(); toast('Playlist eliminada.', 'red'); location.hash = '#/biblioteca';
     return;
   }
   const tip = e.target.closest('[data-tip]');
@@ -825,8 +1127,49 @@ $('#main').addEventListener('click', e => {
   }
 });
 
-function bindView(route){
+function bindView(route, params){
   const main = $('#main');
+  if(route === 'videos'){
+    const target = new Date(); target.setDate(target.getDate() + 45); // lançamento em ~45 dias
+    const cd = () => {
+      const diff = target - new Date();
+      if(diff <= 0) return;
+      const d = Math.floor(diff / 86400000), h = Math.floor(diff / 3600000) % 24,
+            m = Math.floor(diff / 60000) % 60, s = Math.floor(diff / 1000) % 60;
+      const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = String(v).padStart(2, '0'); };
+      set('cdD', d); set('cdH', h); set('cdM', m); set('cdS', s);
+    };
+    cd(); clearInterval(S.vidTimer); S.vidTimer = setInterval(cd, 1000);
+    const bn = $('#btnNotifyVideo');
+    if(bn) bn.addEventListener('click', () => {
+      toast('✓ Vais ser avisado assim que o Canal de Vídeos abrir. Obrigado pelo interesse!', 'ok');
+      bn.textContent = '✓ Estás na lista'; bn.disabled = true;
+    });
+  }
+  if(route === 'biblioteca'){
+    const np = $('#btnNewPlaylist');
+    if(np) np.addEventListener('click', () => {
+      openModal('<h3>Nova playlist</h3><div class="field"><label>Nome</label><input id="plName" placeholder="Ex.: Treino, Festa, Viagem"></div>' +
+        '<div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancelar</button>' +
+        '<button class="btn btn-gold btn-sm" id="createPl">Criar</button></div>');
+      $('#createPl').addEventListener('click', () => {
+        const nome = ($('#plName').value || '').trim();
+        if(!nome){ toast('Dá um nome à playlist.', 'red'); return; }
+        S.playlists.push({ id:'pl_' + Date.now().toString(36), nome, tracks:[] });
+        persist(); closeModal(); toast('Playlist <b>' + nome + '</b> criada.', 'ok'); render();
+      });
+    });
+  }
+  if(route === 'link'){
+    const qr = $('#qrBox');
+    if(qr) drawQR(qr, 'https://musicao.ao/' + params[0]);
+    const cp = $('#btnCopyLink');
+    if(cp) cp.addEventListener('click', () => {
+      const url = 'https://musicao.ao/' + params[0];
+      if(navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast('Link copiado! Partilha onde quiseres.', 'ok')).catch(() => toast('Link: ' + url));
+      else toast('Link: ' + url);
+    });
+  }
   if(route === 'pesquisa'){
     const box = $('#searchBox');
     box.addEventListener('input', () => runSearch(box.value));
@@ -894,37 +1237,41 @@ function bindView(route){
         setTimeout(() => { credit(amt, 'Recarga ' + method); toast('Recarga confirmada: <b>+' + fmtN(amt) + ' Kz</b> na tua wallet.', 'ok'); if(location.hash.includes('wallet')) render(); }, 1800);
       });
     });
-    const bp = $('#btnPremium');
-    if(bp) bp.addEventListener('click', () => {
-      openModal('<h3>Ativar Plano Premium</h3>' +
-        '<p>' + fmtN(PREMIUM_PRICE) + ' Kz por mês · streaming e downloads ilimitados. A subscrição renova automaticamente e podes cancelar a qualquer momento.</p>' +
+    main.querySelectorAll('.plan-btn').forEach(bp => bp.addEventListener('click', () => {
+      const plan = bp.dataset.plan;
+      const isWeek = plan === 'week';
+      const preco = isWeek ? PLAN_WEEK : PLAN_MONTH;
+      const dias = isWeek ? PLAN_WEEK_DAYS : PLAN_MONTH_DAYS;
+      const nome = isWeek ? 'Semanal' : 'Mensal';
+      openModal('<h3>Subscrever Plano ' + nome + '</h3>' +
+        '<p><b>' + fmtN(preco) + ' AKZ</b> · válido por <b>' + dias + ' dias</b>. Streaming ilimitado e ' + PREMIUM_DL_LIMIT + ' downloads incluídos. Renova só quando pagares de novo.</p>' +
         '<div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancelar</button>' +
-        '<button class="btn btn-gold btn-sm" id="confirmPremium">Pagar ' + fmtN(PREMIUM_PRICE) + ' Kz</button></div>');
-      $('#confirmPremium').addEventListener('click', () => {
-        if(S.balance < PREMIUM_PRICE){
+        '<button class="btn btn-gold btn-sm" id="confirmPlan">Pagar ' + fmtN(preco) + ' AKZ</button></div>');
+      $('#confirmPlan').addEventListener('click', () => {
+        if(S.balance < preco){
           closeModal();
-          toast('Precisas de <b>' + fmtN(PREMIUM_PRICE) + ' Kz</b> em saldo para ativar o Premium. Recarrega primeiro.', 'red');
+          toast('Precisas de <b>' + fmtN(preco) + ' AKZ</b> em saldo. Recarrega primeiro.', 'red');
           return;
         }
-        S.balance -= PREMIUM_PRICE;
-        const until = new Date(); until.setMonth(until.getMonth() + 1);
+        S.balance -= preco;
+        const until = new Date(); until.setDate(until.getDate() + dias);
         S.premiumUntil = until.toISOString();
-        S.dlUsed = 0;   // novo ciclo: renova o limite; downloads não utilizados não acumulam
-        S.txs.unshift({ type:'premium', amount:-PREMIUM_PRICE, desc:'Subscrição plano mensal (' + PREMIUM_DL_LIMIT + ' downloads incluídos)', time: nowStamp() });
+        S.planName = nome; S.dlUsed = 0;
+        S.txs.unshift({ type:'premium', amount:-preco, desc:'Subscrição Plano ' + nome + ' (' + dias + ' dias)', time: nowStamp() });
         persist(); updateWalletChip(); closeModal();
-        toast('<b>Plano mensal ativado!</b> Streaming ilimitado + ' + PREMIUM_DL_LIMIT + ' downloads até ' + until.toLocaleDateString('pt-PT') + '.', 'ok');
+        toast('<b>Plano ' + nome + ' ativado!</b> Válido até ' + until.toLocaleDateString('pt-PT') + '.', 'ok');
         render();
       });
-    });
+    }));
     const bc = $('#btnCancelPremium');
     if(bc) bc.addEventListener('click', () => {
-      openModal('<h3>Cancelar subscrição Premium?</h3>' +
+      openModal('<h3>Cancelar renovação?</h3>' +
         '<p>O plano deixa de renovar. Mantém-se ativo até ao fim do período já pago; depois disso voltas ao modelo de carteira (pré-pago).</p>' +
-        '<div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Manter Premium</button>' +
-        '<button class="btn btn-sm" style="background:var(--red);color:#fff" id="confirmCancel">Cancelar subscrição</button></div>');
+        '<div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Manter plano</button>' +
+        '<button class="btn btn-sm" style="background:var(--red);color:#fff" id="confirmCancel">Cancelar renovação</button></div>');
       $('#confirmCancel').addEventListener('click', () => {
-        S.premiumUntil = null; persist(); closeModal();
-        toast('Subscrição Premium cancelada. Voltaste ao modelo de carteira.', 'red');
+        S.premiumUntil = null; S.planName = null; persist(); closeModal();
+        toast('Renovação cancelada. Voltaste ao modelo de carteira.', 'red');
         render();
       });
     });
@@ -970,21 +1317,44 @@ function bindView(route){
       if(!bi.ok){ toast('<b>BI inválido.</b> ' + bi.motivo, 'red'); liveBI(); return; }
       if(!iban.ok){ toast('<b>IBAN inválido.</b> ' + iban.motivo, 'red'); liveIBAN(); return; }
       if(!photoData){ toast('<b>Fotografia</b> é obrigatória.', 'red'); return; }
-      if(S.balance < 10000){ toast('Precisas de <b>10.000 Kz</b> para a taxa de inscrição. Recarrega primeiro.', 'red'); location.hash = '#/wallet'; return; }
-      S.balance -= 10000;
-      S.txs.unshift({ type:'debit', amount:-10000, desc:'Taxa de inscrição de artista', time: nowStamp() });
+      const isFounder = (FOUNDER_LIMIT - FOUNDER_COUNT) > 0;
+      if(!isFounder && S.balance < 10000){ toast('Precisas de <b>10.000 Kz</b> para a taxa de inscrição. Recarrega primeiro.', 'red'); location.hash = '#/wallet'; return; }
+      if(!isFounder){
+        S.balance -= 10000;
+        S.txs.unshift({ type:'debit', amount:-10000, desc:'Taxa de inscrição de artista', time: nowStamp() });
+      } else {
+        // Artista Fundador: inscrição grátis + 1 mês de Premium oferecido
+        const until = new Date(); until.setMonth(until.getMonth() + 1);
+        S.premiumUntil = until.toISOString(); S.dlUsed = 0;
+        S.txs.unshift({ type:'premium', amount:0, desc:'Artista Fundador — inscrição grátis + Premium oferecido (1 mês)', time: nowStamp() });
+      }
+      // ---- Redes sociais (opcional) com validação de URL ----
+      const validURL = (u) => !u || /^https?:\/\/.+\..+/.test(u);
+      const socials = {
+        facebook: ($('#obFacebook').value || '').trim(),
+        instagram: ($('#obInstagram').value || '').trim(),
+        tiktok: ($('#obTiktok').value || '').trim(),
+        youtube: ($('#obYoutube').value || '').trim(),
+        linkedin: ($('#obLinkedin').value || '').trim(),
+      };
+      for(const [k, v] of Object.entries(socials)){
+        if(v && !validURL(v)){ toast('O link de <b>' + k + '</b> não é um URL válido (deve começar por http).', 'red'); return; }
+      }
       S.artistProfile = {
         nome, artistico: ($('#obArtistico').value || '').trim() || nome,
         idade: $('#obIdade').value || '', nif: ($('#obNif').value || '').trim(),
         bi: biIn.value.replace(/\s+/g, '').toUpperCase(),
         iban: fmtIBAN(ibanIn.value), banco: $('#obBanco').value,
         titular: ($('#obTitular').value || '').trim() || nome,
-        foto: photoData, verificado: false,
+        foto: photoData, verificado: false, founder: isFounder,
+        socials,
         totalArrecadado: 0, porReceber: 0,   // contadores do artista (privados)
         criadoEm: nowStamp(),
       };
       persist(); updateWalletChip();
-      toast('<b>Registo concluído!</b> Identidade e IBAN validados. Já podes publicar música e acompanhar os teus ganhos.', 'ok');
+      toast(isFounder
+        ? '<b>Bem-vindo, Artista Fundador!</b> Inscrição gratuita concluída + 1 mês de Premium oferecido. Já podes publicar.'
+        : '<b>Registo concluído!</b> Identidade e IBAN validados. Já podes publicar música e acompanhar os teus ganhos.', 'ok');
       location.hash = '#/dashboard';
       render();
     });
@@ -1012,14 +1382,64 @@ function bindView(route){
         fill.style.width = pct + '%';
       }, 120);
     }
+    const aiChk = $('#upAI');
+    if(aiChk) aiChk.addEventListener('change', () => { $('#upAIType').hidden = !aiChk.checked; });
     $('#btnPublish').addEventListener('click', () => {
       const title = $('#upTitle').value.trim();
+      const upArtist = ($('#upArtist').value || '').trim();
       if(!title){ toast('<b>Título em falta.</b> Preenche os campos obrigatórios (*).', 'red'); return; }
       if(!fileName){ toast('<b>Falta o ficheiro áudio.</b> Arrasta o teu WAV/FLAC para a zona de upload.', 'red'); return; }
+      const usouIA = $('#upAI').checked;
+      const tiposIA = Array.from(document.querySelectorAll('.aiKind:checked')).map(c => c.value);
+      if(usouIA && tiposIA.length === 0){ toast('Indica <b>o que</b> foi feito com IA (voz, instrumentação…).', 'red'); return; }
+
+      // ---- SECÇÃO 5: deteção inteligente de duplicados (hash+título+duração) ----
+      const norm = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const dupExistente = TRACKS.find(t => norm(t.title) === norm(title)) ||
+                           S.pendingUploads.find(u => norm(u.title) === norm(title));
+      // hash simulado do ficheiro (nome+tamanho) — em produção seria fingerprint acústico
+      const fileHash = norm(fileName) + '_' + (fileName.length);
+      const hashDup = S.pendingUploads.find(u => u.hash === fileHash);
+
+      // ---- SECÇÃO 6: validação de direitos de autor (nome da conta vs. metadados) ----
+      const contaNome = norm(S.artistProfile.artistico || S.artistProfile.nome);
+      const metaNome = norm(upArtist);
+      const incoerenciaAutor = metaNome && contaNome && metaNome !== contaNome &&
+                               !metaNome.includes(contaNome) && !contaNome.includes(metaNome);
+
+      // ---- SECÇÃO 8: anti-fraude (upload repetitivo em curto espaço) ----
+      const agora = Date.now();
+      const recentes = S.pendingUploads.filter(u => u.ts && (agora - u.ts) < 60000).length;
+      const fraudeSuspeita = recentes >= 3 || hashDup;
+
+      // ---- SECÇÃO 7: determinar estado inicial ----
+      let estado, msg, alerta = null;
+      if(hashDup || dupExistente){
+        estado = 'Em Validação';
+        msg = 'Foi identificada uma música potencialmente igual ou muito semelhante já existente na plataforma. O conteúdo será encaminhado para validação administrativa.';
+      } else if(incoerenciaAutor){
+        estado = 'Em Análise de Direitos';
+        msg = 'O nome do artista nos metadados ("' + upArtist + '") não corresponde ao da tua conta. A faixa segue para validação de direitos de autor.';
+      } else {
+        estado = 'Em Validação';
+        msg = '"' + title + '" enviada para moderação.' + (usouIA ? ' Declarada com IA (' + tiposIA.join(', ') + ').' : '');
+      }
+      if(fraudeSuspeita){
+        alerta = { tipo: hashDup ? 'Ficheiro duplicado' : 'Upload repetitivo', faixa: title, artista: S.artistProfile.artistico, quando: nowStamp(), ip: '197.2' + Math.floor(Math.random()*10) + '.x.x' };
+        S.fraudLog = S.fraudLog || [];
+        S.fraudLog.unshift(alerta);
+      }
+
       if(!debit(FEE_UPLOAD, 'Taxa de publicação — ' + title, 'upload')) return;
-      S.pendingUploads.unshift({ title, genre: $('#upGenre').value, status: 'em moderação' });
+      S.pendingUploads.unshift({
+        title, artist: upArtist, genre: $('#upGenre').value, status: estado,
+        ia: usouIA, iaTipos: tiposIA, hash: fileHash, ts: agora,
+        flagged: !!(hashDup || dupExistente || incoerenciaAutor || fraudeSuspeita),
+      });
       persist();
-      toast('<b>' + title + '</b> enviada para moderação. Taxa de ' + fmtN(FEE_UPLOAD) + ' Kz debitada.', 'ok');
+      const cor = (hashDup || dupExistente || incoerenciaAutor) ? 'red' : 'ok';
+      toast('<b>' + estado + '</b> · ' + msg, cor);
+      if(alerta) setTimeout(() => toast('⚠ Alerta de segurança registado para a administração (evidências e logs guardados).', 'red'), 900);
       render();
     });
   }
@@ -1067,6 +1487,51 @@ function bindView(route){
       main.querySelectorAll('.psxChk').forEach(c => { c.checked = all.checked; });
       refreshTotal();
     });
+    const dlFile = (name, content, type) => {
+      const blob = new Blob([content], { type });
+      const aEl = document.createElement('a'); aEl.href = URL.createObjectURL(blob); aEl.download = name; aEl.click();
+    };
+    const chosenRows = () => Array.from(main.querySelectorAll('.psxChk:checked')).map(c => {
+      const a = ARTIST_ACCOUNTS.find(x => x.artistId === c.dataset.id);
+      const art = artistOf(a.artistId);
+      return { nome: art ? art.name : a.titular, nif: a.nif, banco: a.banco, iban: a.iban, valor: a.pendValor };
+    });
+    const csvBtn = $('#psxCsv');
+    if(csvBtn) csvBtn.addEventListener('click', () => {
+      const rows = chosenRows();
+      if(!rows.length){ toast('Seleciona pelo menos um artista.', 'red'); return; }
+      const csv = 'NOME;NIF;BANCO;IBAN;VALOR;MOEDA\n' + rows.map(r => [r.nome, r.nif, r.banco, r.iban.replace(/\s/g,''), r.valor, 'AKZ'].join(';')).join('\n');
+      dlFile('MUSICAO_pagamentos_202606.csv', csv, 'text/csv');
+      toast('Exportado CSV com ' + rows.length + ' beneficiários.', 'ok');
+    });
+    const xlsBtn = $('#psxXls');
+    if(xlsBtn) xlsBtn.addEventListener('click', () => {
+      const rows = chosenRows();
+      if(!rows.length){ toast('Seleciona pelo menos um artista.', 'red'); return; }
+      const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1"><tr><th>Nome</th><th>NIF</th><th>Banco</th><th>IBAN</th><th>Valor</th><th>Moeda</th></tr>' +
+        rows.map(r => '<tr><td>' + r.nome + '</td><td>' + r.nif + '</td><td>' + r.banco + '</td><td>' + r.iban + '</td><td>' + r.valor + '</td><td>AKZ</td></tr>').join('') +
+        '<tr><td colspan="4"><b>TOTAL</b></td><td><b>' + rows.reduce((s,r)=>s+r.valor,0) + '</b></td><td>AKZ</td></tr></table></body></html>';
+      dlFile('MUSICAO_pagamentos_202606.xls', html, 'application/vnd.ms-excel');
+      toast('Exportado Excel com ' + rows.length + ' beneficiários.', 'ok');
+    });
+    const pdfBtn = $('#psxPdf');
+    if(pdfBtn) pdfBtn.addEventListener('click', () => {
+      const rows = chosenRows();
+      if(!rows.length){ toast('Seleciona pelo menos um artista.', 'red'); return; }
+      const total = rows.reduce((s,r)=>s+r.valor,0);
+      const win = window.open('', '_blank');
+      win.document.write('<html><head><title>Music AO — Relatório de Pagamentos 06/2026</title>' +
+        '<style>body{font-family:Arial,sans-serif;padding:32px;color:#111}h1{color:#E0122C}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#1A1A2E;color:#fff}tfoot td{font-weight:bold;background:#f2f2f5}</style></head><body>' +
+        '<h1>MUSIC AO</h1><h2>Relatório de Pagamentos a Artistas — Junho 2026</h2>' +
+        '<p>Débito único da conta da plataforma · ' + rows.length + ' beneficiários · gerado em ' + nowStamp() + '</p>' +
+        '<table><thead><tr><th>Nome</th><th>NIF</th><th>Banco</th><th>IBAN</th><th style="text-align:right">Valor (AKZ)</th></tr></thead><tbody>' +
+        rows.map(r => '<tr><td>' + r.nome + '</td><td>' + r.nif + '</td><td>' + r.banco + '</td><td>' + r.iban + '</td><td style="text-align:right">' + fmtN(r.valor) + '</td></tr>').join('') +
+        '</tbody><tfoot><tr><td colspan="4">TOTAL A PAGAR</td><td style="text-align:right">' + fmtN(total) + ' Kz</td></tr></tfoot></table>' +
+        '<p style="margin-top:24px;color:#888;font-size:11px">Documento gerado pela plataforma Music AO · confidencial</p>' +
+        '</body></html>');
+      win.document.close(); setTimeout(() => win.print(), 400);
+      toast('Relatório PDF pronto — usa "Guardar como PDF" na janela de impressão.', 'ok');
+    });
     const prev = $('#psxPreview');
     if(prev) prev.addEventListener('click', () => {
       const chosen = Array.from(main.querySelectorAll('.psxChk:checked'));
@@ -1095,18 +1560,20 @@ function bindView(route){
         setTimeout(() => {
           const ref = 'MUSICAO-202606';
           const dataHoje = new Date().toISOString().slice(0, 10);
+          const d = new Date();
+          const descPag = 'Pag. MUSICAO (' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ')';
           // cabeçalho + linha de débito único + múltiplos créditos
           let seq = 0;
           const linhas = ARTIST_ACCOUNTS.filter(a => chosen.includes(a.artistId) && a.pendValor > 0).map(a => {
             seq++;
             const art = artistOf(a.artistId);
             return [a.iban.replace(/\s/g, ''), (art ? art.name : a.titular), a.nif, a.pendValor,
-                    'Royalties Music AO 06/2026', ref + '-' + String(seq).padStart(4, '0'),
+                    descPag, ref + '-' + String(seq).padStart(4, '0'),
                     dataHoje, 'AKZ', a.banco, seq, 'PAGO'].join(';');
           });
           const header = 'TIPO;IBAN;NOME;NIF;VALOR;DESCRICAO;REFERENCIA;DATA;MOEDA;BANCO;NUM_INTERNO;ESTADO';
           const debito = ['D', 'AO060040000000000000009981', 'MUSIC AO, S.A.', '5417000000',
-                          total, 'Débito consolidado royalties 06/2026', ref + '-DEB', dataHoje, 'AKZ', 'BIC', 0, 'PROCESSADO'].join(';');
+                          total, descPag, ref + '-DEB', dataHoje, 'AKZ', 'BIC', 0, 'PROCESSADO'].join(';');
           const creditos = linhas.map(l => 'C;' + l);
           const conteudo = header + '\n' + debito + '\n' + creditos.join('\n') + '\n';
 
