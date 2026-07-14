@@ -203,14 +203,14 @@ function doLogin(verbo){
 }
 function pausePlayback(){
   S.isPlaying = false; AudioEngine.pause();
-  $('#btnPlay').textContent = '▶'; $('#eq').classList.remove('on');
-  const np = $('#npPlay'); if(np) np.textContent = '▶';
+  $('#eq').classList.remove('on');
+  setNpPlayIcon();
 }
 function resumePlayback(){
   const t = S.queue[S.qIdx]; if(!t) return;
   S.isPlaying = true; AudioEngine.play(t);
-  $('#btnPlay').textContent = '❚❚'; $('#eq').classList.add('on');
-  const np = $('#npPlay'); if(np) np.textContent = '❚❚';
+  $('#eq').classList.add('on');
+  setNpPlayIcon();
 }
 function nextTrack(){
   if(S.repeat){ startPlayback(); return; }
@@ -228,7 +228,7 @@ function renderPlayerBar(t){
   $('#pTitle').textContent = t.title;
   $('#pArtist').textContent = artistOf(t.artistId).name;
   $('#pDur').textContent = fmtDur(t.dur);
-  $('#btnPlay').textContent = '❚❚';
+  S.isPlaying = true; setNpPlayIcon();
   $('#eq').classList.add('on');
   updateTicker(t);
   const owned = S.owned.includes(t.id);
@@ -237,22 +237,13 @@ function renderPlayerBar(t){
     : (isPremium() ? (dlLeft() > 0 ? '⭳ ' + dlLeft() + ' de ' + PREMIUM_DL_LIMIT : '⭳ ' + PRICE_DL + ' Kz')
                    : '⭳ ' + PRICE_DL + ' Kz');
   dl.classList.toggle('owned', owned || (isPremium() && dlLeft() > 0));
-  syncExpanded(t);
 }
-function syncExpanded(t){
-  const cover = $('#npCover'); if(!cover) return;
-  const g = genreOf(t.genre);
-  cover.style.background = 'linear-gradient(135deg,' + g.c1 + ',' + g.c2 + ')';
-  $('#npTitle').textContent = t.title;
-  $('#npArtist').textContent = artistOf(t.artistId).name;
-  $('#npArtist').setAttribute('href', '#/artista/' + t.artistId);
-  $('#npDur').textContent = fmtDur(t.dur);
-  $('#npPlay').textContent = S.isPlaying ? '❚❚' : '▶';
-  $('#npShuffle').classList.toggle('on', S.shuffle);
-  $('#npRepeat').classList.toggle('on', S.repeat);
-  const fav = $('#npFav');
-  fav.classList.toggle('liked', S.liked.includes(t.id));
-  fav.innerHTML = (S.liked.includes(t.id) ? '♥' : '♡') + ' Favoritar';
+function syncExpanded(){}
+function setNpPlayIcon(){
+  const btn = $('#btnPlay'); if(!btn) return;
+  const p = btn.querySelector('.ic-play'), q = btn.querySelector('.ic-pause');
+  if(p) p.hidden = S.isPlaying;
+  if(q) q.hidden = !S.isPlaying;
 }
 function updateTicker(t){
   const labels = { economica:'Económica', normal:'Normal', alta:'Alta' };
@@ -263,7 +254,6 @@ function updateProgress(t, limit){
   const pct = Math.min(100, S.elapsed / total * 100);
   $('#pTime').textContent = fmtDur(S.elapsed) + (limit ? ' / 0:' + PREVIEW_SEC + ' (preview)' : '');
   $('#pFill').style.width = pct + '%';
-  const nf = $('#npFill'); if(nf){ nf.style.width = pct + '%'; $('#npTime').textContent = fmtDur(S.elapsed); }
 }
 $('#btnPlay').addEventListener('click', () => S.isPlaying ? pausePlayback() : resumePlayback());
 $('#btnNext').addEventListener('click', nextTrack);
@@ -278,40 +268,6 @@ $('#btnDl').addEventListener('click', () => {
   const t = S.queue[S.qIdx]; if(!t) return;
   buyDownload(t.id);
 });
-
-/* ---- Leitor expandido (ecrã cheio) ---- */
-function openExpanded(){
-  const t = S.queue[S.qIdx]; if(!t) return;
-  syncExpanded(t); updateProgress(t);
-  $('#npOverlay').hidden = false;
-  document.body.style.overflow = 'hidden';
-}
-function closeExpanded(){
-  $('#npOverlay').hidden = true;
-  document.body.style.overflow = '';
-}
-$('#btnExpand').addEventListener('click', openExpanded);
-document.querySelector('.player-track')?.addEventListener('click', openExpanded);
-$('#npClose').addEventListener('click', closeExpanded);
-$('#npPlay').addEventListener('click', () => { S.isPlaying ? pausePlayback() : resumePlayback(); const t = S.queue[S.qIdx]; if(t) syncExpanded(t); });
-$('#npNext').addEventListener('click', () => { nextTrack(); });
-$('#npPrev').addEventListener('click', () => { prevTrack(); });
-$('#npShuffle').addEventListener('click', () => { S.shuffle = !S.shuffle; if(S.shuffle) S.repeat = false; const t = S.queue[S.qIdx]; if(t) syncExpanded(t); toast(S.shuffle ? 'Modo aleatório ligado' : 'Modo aleatório desligado'); });
-$('#npRepeat').addEventListener('click', () => { S.repeat = !S.repeat; if(S.repeat) S.shuffle = false; const t = S.queue[S.qIdx]; if(t) syncExpanded(t); toast(S.repeat ? 'Repetição ligada' : 'Repetição desligada'); });
-$('#npBar').addEventListener('click', e => {
-  const t = S.queue[S.qIdx]; if(!t) return;
-  const r = e.currentTarget.getBoundingClientRect();
-  S.elapsed = Math.floor((e.clientX - r.left) / r.width * t.dur);
-  updateProgress(t);
-});
-$('#npFav').addEventListener('click', () => {
-  const t = S.queue[S.qIdx]; if(!t) return;
-  const i = S.liked.indexOf(t.id);
-  if(i >= 0) S.liked.splice(i, 1); else { S.liked.push(t.id); toast('Adicionada às favoritas ♥', 'ok'); }
-  persist(); syncExpanded(t);
-});
-$('#npDl').addEventListener('click', () => { const t = S.queue[S.qIdx]; if(t) buyDownload(t.id); });
-$('#npPlaylist').addEventListener('click', () => { closeExpanded(); location.hash = '#/biblioteca'; });
 
 /* ---- Regras de download (secção 8 da especificação) ---- */
 function buyDownload(trackId){
