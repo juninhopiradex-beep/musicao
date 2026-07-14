@@ -241,7 +241,8 @@ function renderPlayerBar(t){
 }
 function syncExpanded(t){
   const cover = $('#npCover'); if(!cover) return;
-  cover.style.cssText = coverStyle(t.genre) + ';width:100%;max-width:380px;aspect-ratio:1;border-radius:20px;margin-bottom:26px';
+  const g = genreOf(t.genre);
+  cover.style.background = 'linear-gradient(135deg,' + g.c1 + ',' + g.c2 + ')';
   $('#npTitle').textContent = t.title;
   $('#npArtist').textContent = artistOf(t.artistId).name;
   $('#npArtist').setAttribute('href', '#/artista/' + t.artistId);
