@@ -97,8 +97,57 @@
         <span class="tick-value" id="tickValue">Normal</span>
       </div>
       <button id="btnDl" class="btn-dl" title="Comprar download">⭳ 100 Kz</button>
+      <button id="btnFull" class="btn-full" title="Ecrã inteiro" aria-label="Ecrã inteiro">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+      </button>
     </div>
   </footer>
+
+  <!-- ===== Leitor em ecrã inteiro ===== -->
+  <div class="fs-player" id="fsPlayer" hidden>
+    <div class="fs-bg" id="fsBg"></div>
+    <button class="fs-close" id="fsClose" aria-label="Fechar ecrã inteiro">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10 21 3"/><path d="M3 21l7-7"/></svg>
+    </button>
+    <div class="fs-inner">
+      <div class="fs-cover" id="fsCover"></div>
+      <div class="fs-title" id="fsTitle">—</div>
+      <a class="fs-artist" id="fsArtist" href="#">—</a>
+      <div class="fs-progress">
+        <span id="fsTime">0:00</span>
+        <div class="fs-bar" id="fsBar"><div class="fs-fill" id="fsFill"></div></div>
+        <span id="fsDur">0:00</span>
+      </div>
+      <div class="fs-controls">
+        <button id="fsShuffle" class="fs-sec" title="Aleatório" aria-label="Aleatório">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
+        </button>
+        <button id="fsPrev" class="fs-sec" title="Anterior" aria-label="Anterior">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+        </button>
+        <button id="fsPlay" class="fs-play" title="Reproduzir / pausar" aria-label="Reproduzir / pausar">
+          <svg class="ic-play" viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="ic-pause" viewBox="0 0 24 24" width="32" height="32" fill="currentColor" hidden><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+        </button>
+        <button id="fsNext" class="fs-sec" title="Seguinte" aria-label="Seguinte">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M16 6h2v12h-2zM6 6v12l8.5-6z"/></svg>
+        </button>
+        <button id="fsRepeat" class="fs-sec" title="Repetir" aria-label="Repetir">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+        </button>
+      </div>
+      <div class="fs-actions">
+        <button id="fsFav" class="fs-act">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+          <span>Favoritar</span>
+        </button>
+        <button id="fsDl" class="fs-act">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          <span>Baixar</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ===== Bottom nav (mobile) ===== -->
   <nav class="bottomnav" aria-label="Navegação móvel">

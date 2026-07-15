@@ -244,6 +244,7 @@ function setNpPlayIcon(){
   const p = btn.querySelector('.ic-play'), q = btn.querySelector('.ic-pause');
   if(p) p.hidden = S.isPlaying;
   if(q) q.hidden = !S.isPlaying;
+  if(typeof setFSPlayIcon === 'function') setFSPlayIcon();
 }
 function updateTicker(t){
   const labels = { economica:'Económica', normal:'Normal', alta:'Alta' };
@@ -254,6 +255,7 @@ function updateProgress(t, limit){
   const pct = Math.min(100, S.elapsed / total * 100);
   $('#pTime').textContent = fmtDur(S.elapsed) + (limit ? ' / 0:' + PREVIEW_SEC + ' (preview)' : '');
   $('#pFill').style.width = pct + '%';
+  const ff = $('#fsFill'); if(ff && !$('#fsPlayer').hidden){ ff.style.width = pct + '%'; $('#fsTime').textContent = fmtDur(S.elapsed); }
 }
 $('#btnPlay').addEventListener('click', () => S.isPlaying ? pausePlayback() : resumePlayback());
 $('#btnNext').addEventListener('click', nextTrack);
@@ -268,6 +270,68 @@ $('#btnDl').addEventListener('click', () => {
   const t = S.queue[S.qIdx]; if(!t) return;
   buyDownload(t.id);
 });
+
+/* ---- Leitor em ecrã inteiro ---- */
+function syncFS(t){
+  if(!t) return;
+  const g = genreOf(t.genre);
+  $('#fsCover').style.background = 'linear-gradient(135deg,' + g.c1 + ',' + g.c2 + ')';
+  $('#fsTitle').textContent = t.title;
+  $('#fsArtist').textContent = artistOf(t.artistId).name;
+  $('#fsArtist').setAttribute('href', '#/artista/' + t.artistId);
+  $('#fsDur').textContent = fmtDur(t.dur);
+  $('#fsShuffle').classList.toggle('on', S.shuffle);
+  $('#fsRepeat').classList.toggle('on', S.repeat);
+  $('#fsFav').classList.toggle('liked', S.liked.includes(t.id));
+  setFSPlayIcon();
+}
+function setFSPlayIcon(){
+  const btn = $('#fsPlay'); if(!btn) return;
+  const p = btn.querySelector('.ic-play'), q = btn.querySelector('.ic-pause');
+  if(p) p.hidden = S.isPlaying;
+  if(q) q.hidden = !S.isPlaying;
+}
+function openFS(){
+  const t = S.queue[S.qIdx]; if(!t) return;
+  syncFS(t); updateProgress(t);
+  // fundo imbondeiro (coloca a imagem em assets/imbondeiro.png ou .jpg);
+  // se não existir, o leitor fica só com o preto elegante.
+  const bg = $('#fsBg');
+  if(bg && !bg.dataset.tried){
+    bg.dataset.tried = '1';
+    ['assets/imbondeiro.png', 'assets/imbondeiro.jpg', 'assets/imbondeiro.webp'].forEach(src => {
+      const img = new Image();
+      img.onload = () => { document.documentElement.style.setProperty('--imbondeiro', 'url(' + src + ')'); };
+      img.src = src;
+    });
+  }
+  $('#fsPlayer').hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+function closeFS(){
+  $('#fsPlayer').hidden = true;
+  document.body.style.overflow = '';
+}
+$('#btnFull').addEventListener('click', openFS);
+$('#fsClose').addEventListener('click', closeFS);
+$('#fsPlay').addEventListener('click', () => { S.isPlaying ? pausePlayback() : resumePlayback(); syncFS(S.queue[S.qIdx]); });
+$('#fsNext').addEventListener('click', () => { nextTrack(); });
+$('#fsPrev').addEventListener('click', () => { prevTrack(); });
+$('#fsShuffle').addEventListener('click', () => { S.shuffle = !S.shuffle; if(S.shuffle) S.repeat = false; syncFS(S.queue[S.qIdx]); toast(S.shuffle ? 'Modo aleatório ligado' : 'Modo aleatório desligado'); });
+$('#fsRepeat').addEventListener('click', () => { S.repeat = !S.repeat; if(S.repeat) S.shuffle = false; syncFS(S.queue[S.qIdx]); toast(S.repeat ? 'Repetição ligada' : 'Repetição desligada'); });
+$('#fsBar').addEventListener('click', e => {
+  const t = S.queue[S.qIdx]; if(!t) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  S.elapsed = Math.floor((e.clientX - r.left) / r.width * t.dur);
+  updateProgress(t);
+});
+$('#fsFav').addEventListener('click', () => {
+  const t = S.queue[S.qIdx]; if(!t) return;
+  const i = S.liked.indexOf(t.id);
+  if(i >= 0) S.liked.splice(i, 1); else { S.liked.push(t.id); toast('Adicionada às favoritas ♥', 'ok'); }
+  persist(); syncFS(t);
+});
+$('#fsDl').addEventListener('click', () => { const t = S.queue[S.qIdx]; if(t) buyDownload(t.id); });
 
 /* ---- Regras de download (secção 8 da especificação) ---- */
 function buyDownload(trackId){
@@ -406,6 +470,11 @@ function viewHome(){
   const top = TRACKS.slice().sort((a, b) => b.plays - a.plays).slice(0, 8);
   const novos = TRACKS.filter(t => t.year === 2026).slice(0, 6);
   return '' +
+  '<div class="home-stats">' +
+    '<div class="hstat"><div class="hstat-label">Artistas</div><div class="hstat-num">12 480</div><div class="hstat-delta">+214 esta semana</div></div>' +
+    '<div class="hstat"><div class="hstat-label">Utilizadores</div><div class="hstat-num">486 200</div><div class="hstat-delta">+8.940 esta semana</div></div>' +
+    '<div class="hstat"><div class="hstat-label">Faixas aprovadas</div><div class="hstat-num">38 150</div><div class="hstat-delta">&nbsp;</div></div>' +
+  '</div>' +
   '<div class="hero">' +
     '<div class="eyebrow">Plataforma angolana · beta</div>' +
     '<h1 class="h-display">A tua música,<br><span class="accent">o teu dinheiro.</span></h1>' +

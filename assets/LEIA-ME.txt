@@ -1,0 +1,9 @@
+COLOCA AQUI A IMAGEM DO IMBONDEIRO
+==================================
+Guarda a 3ª variação (silhueta minimalista dourada "ANGOLA · IMBONDEIRO")
+com o nome:  imbondeiro.png   (ou .jpg / .webp)
+
+Caminho final: musicao-app/assets/imbondeiro.png
+
+O leitor em ecrã inteiro usa-a automaticamente como fundo.
+Se não colocares nenhuma imagem, o leitor fica com o fundo preto elegante.
