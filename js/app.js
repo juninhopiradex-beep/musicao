@@ -294,14 +294,13 @@ function setFSPlayIcon(){
 function openFS(){
   const t = S.queue[S.qIdx]; if(!t) return;
   syncFS(t); updateProgress(t);
-  // fundo imbondeiro (coloca a imagem em assets/imbondeiro.png ou .jpg);
-  // se não existir, o leitor fica só com o preto elegante.
+  // fundo imbondeiro — aplicado diretamente no elemento para o caminho ser relativo à raiz (não ao CSS)
   const bg = $('#fsBg');
   if(bg && !bg.dataset.tried){
     bg.dataset.tried = '1';
     ['assets/imbondeiro.png', 'assets/imbondeiro.jpg', 'assets/imbondeiro.webp'].forEach(src => {
       const img = new Image();
-      img.onload = () => { document.documentElement.style.setProperty('--imbondeiro', 'url(' + src + ')'); };
+      img.onload = () => { bg.style.backgroundImage = 'url(' + src + ')'; };
       img.src = src;
     });
   }
