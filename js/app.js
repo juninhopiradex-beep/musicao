@@ -705,7 +705,7 @@ function viewArtistOnboarding(){
 
   '<div class="panel"><div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">' +
     '<div style="text-align:center">' +
-      '<div id="obPhoto" style="width:132px;height:132px;border-radius:16px;background:var(--surface2);border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;color:var(--muted);font-size:12px;text-align:center;padding:8px">Carregar<br>fotografia *</div>' +
+      '<div id="obPhoto" style="width:132px;height:132px;border-radius:16px;background:var(--surface2);border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;color:var(--muted);font-size:12px;text-align:center;padding:8px">Carregar<br>fotografia</div>' +
       '<input id="obPhotoInput" type="file" accept="image/*" hidden>' +
     '</div>' +
     '<div style="flex:1;min-width:260px"><div class="form-grid">' +
@@ -716,10 +716,12 @@ function viewArtistOnboarding(){
     '</div></div>' +
   '</div></div>' +
 
-  '<div class="panel"><h3>Identificação e conta bancária</h3><div class="form-grid">' +
-    '<div class="field"><label for="obBI">Bilhete de Identidade *</label><input id="obBI" type="text" placeholder="007654321LA042" style="text-transform:uppercase"><div class="valid-msg" id="msgBI"></div></div>' +
+  '<div class="phased-note">✓ <b>Publica hoje, valida quando fores receber.</b> Para começares a publicar só precisas do nome artístico. Os dados bancários (BI e IBAN) só são necessários quando pedires o teu primeiro levantamento.</div>' +
+
+  '<div class="panel"><h3>Identificação e conta bancária <span style="font-size:12px;color:var(--muted);font-weight:400">(podes preencher depois)</span></h3><div class="form-grid">' +
+    '<div class="field"><label for="obBI">Bilhete de Identidade</label><input id="obBI" type="text" placeholder="007654321LA042" style="text-transform:uppercase"><div class="valid-msg" id="msgBI"></div></div>' +
     selectField('Banco', 'obBanco', ['BIC','BAI','BFA','BPC','SOL','BCI','Standard Bank','Keve','BNI']) +
-    '<div class="field" style="grid-column:1 / -1"><label for="obIBAN">IBAN *</label><input id="obIBAN" type="text" placeholder="AO06 0040 0000 1089 4244 10175" style="text-transform:uppercase;font-family:monospace"><div class="valid-msg" id="msgIBAN"></div></div>' +
+    '<div class="field" style="grid-column:1 / -1"><label for="obIBAN">IBAN</label><input id="obIBAN" type="text" placeholder="AO06 0040 0000 1089 4244 10175" style="text-transform:uppercase;font-family:monospace"><div class="valid-msg" id="msgIBAN"></div></div>' +
     field('Titular da conta', 'obTitular', 'text', 'Nome do titular') +
   '</div>' +
   '<h3 style="margin-top:20px">Redes sociais <span style="font-size:12px;color:var(--muted);font-weight:400">(opcional)</span></h3>' +
@@ -731,10 +733,10 @@ function viewArtistOnboarding(){
     field('LinkedIn', 'obLinkedin', 'text', 'https://linkedin.com/in/...') +
   '</div>' +
   (founder ?
-    '<div class="fee-note" style="margin-top:20px;background:var(--gold-soft);border-color:rgba(242,176,30,.3)">★ Como <b>Artista Fundador</b>, a tua inscrição é <b>gratuita</b> e recebes <b>1 mês de Premium</b>. Concluis o registo sem qualquer débito.</div>' +
-    '<button class="btn btn-gold" id="btnRegisterArtist" style="margin-top:6px">Concluir registo grátis (Fundador)</button>' :
-    '<div class="fee-note" style="margin-top:20px">◆ Taxa de inscrição única: <b>' + fmtN(10000) + ' Kz</b> — debitada da tua wallet. Saldo atual: <b>' + fmtKz(S.balance) + '</b>. Após validação, ficas elegível para receber pagamentos.</div>' +
-    '<button class="btn btn-red" id="btnRegisterArtist" style="margin-top:6px">Concluir registo e pagar ' + fmtN(10000) + ' Kz</button>') +
+    '<div class="fee-note" style="margin-top:20px;background:var(--gold-soft);border-color:rgba(242,176,30,.3)">★ Como <b>Artista Fundador</b>, a tua inscrição é <b>gratuita</b> e recebes <b>1 mês de Premium</b>. Publica já; valida os dados bancários quando fores receber.</div>' +
+    '<button class="btn btn-gold" id="btnRegisterArtist" style="margin-top:6px">Criar perfil e começar a publicar (Fundador)</button>' :
+    '<div class="fee-note" style="margin-top:20px">◆ Taxa de inscrição única: <b>' + fmtN(10000) + ' Kz</b> — debitada da tua wallet. Saldo atual: <b>' + fmtKz(S.balance) + '</b>. Publica já; a validação do IBAN só é precisa para levantar.</div>' +
+    '<button class="btn btn-red" id="btnRegisterArtist" style="margin-top:6px">Criar perfil e pagar ' + fmtN(10000) + ' Kz</button>') +
   '</div>';
 }
 
@@ -806,6 +808,14 @@ function viewDashboard(){
   '<div class="eyebrow">Painel do artista · ' + a.name + '</div>' +
   '<h1 class="h-display" style="font-size:30px;margin-bottom:22px">A tua contabilidade</h1>' +
 
+  (S.artistProfile && !S.artistProfile.kycCompleto ?
+    '<div class="kyc-banner">' +
+      '<span class="kyc-ico">⚠</span>' +
+      '<div class="kyc-text"><b>Completa a tua validação para poderes levantar</b>' +
+      '<span>Já podes publicar música. Para receberes os teus ganhos, precisas de adicionar o BI e o IBAN.</span></div>' +
+      '<button class="btn btn-gold btn-sm" id="btnCompleteKyc">Completar agora</button>' +
+    '</div>' : '') +
+
   /* Totais da plataforma */
   '<div class="totals-grid">' +
     '<div class="total-card"><div class="total-ico">♫</div><div class="total-num">' + fmtN(TRACKS.length) + '</div><div class="total-lbl">Músicas na plataforma</div></div>' +
@@ -847,6 +857,43 @@ function viewDashboard(){
         '<div class="hbar"><span>' + c[0] + '</span><div class="hb-track"><div class="hb-fill" style="width:' + c[1] + '%"></div></div><span class="hb-val">' + c[2] + '</span></div>'
       ).join('') + '</div></div>' +
   '</div>' +
+
+  /* ---- Alertas inteligentes (secção 7.1 da auditoria) ---- */
+  '<div class="panel"><h3>🔔 Alertas inteligentes</h3>' +
+    '<div class="alert-list">' +
+      '<div class="smart-alert up"><span class="sa-ico">📈</span><div><b>A tua faixa "' + mine[0].title + '" está a crescer em Benguela</b><span>+34% de plays nos últimos 7 dias nesta província</span></div></div>' +
+      '<div class="smart-alert milestone"><span class="sa-ico">🎯</span><div><b>Atingiste 10.000 plays!</b><span>"' + (mine[1] ? mine[1].title : mine[0].title) + '" ultrapassou o marco dos 10 mil</span></div></div>' +
+      '<div class="smart-alert follow"><span class="sa-ico">➕</span><div><b>+128 novos seguidores esta semana</b><span>O teu público cresceu 6% face à semana anterior</span></div></div>' +
+    '</div>' +
+  '</div>' +
+
+  /* ---- Previsões (secção 7.1 da auditoria) ---- */
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:16px" class="dash-cols">' +
+    (function(){
+      const atual = ARTIST_REVENUE_SERIES[ARTIST_REVENUE_SERIES.length - 1].v;
+      const anterior = ARTIST_REVENUE_SERIES[ARTIST_REVENUE_SERIES.length - 2].v;
+      const diaDoMes = new Date().getDate();
+      const projecao = Math.round(atual / diaDoMes * 30);
+      const varPct = Math.round((projecao - anterior) / anterior * 100);
+      return '<div class="panel" style="border-color:rgba(46,125,50,.3)">' +
+        '<h3 style="color:#33d17a">📊 Previsão de receita — mês em curso</h3>' +
+        '<div style="font-family:var(--font-display);font-weight:900;font-size:30px;margin:6px 0 4px">' + fmtKz(projecao) + '</div>' +
+        '<p style="color:var(--muted);font-size:13px">Estimativa até ao fim do mês, com base no ritmo atual (' + fmtKz(atual) + ' em ' + diaDoMes + ' dias)</p>' +
+        '<p style="font-size:13px;margin-top:10px;color:' + (varPct >= 0 ? '#33d17a' : 'var(--red)') + '">' + (varPct >= 0 ? '▲' : '▼') + ' ' + Math.abs(varPct) + '% face ao mês anterior (' + fmtKz(anterior) + ')</p>' +
+      '</div>';
+    })() +
+    '<div class="panel">' +
+      '<h3>📄 Relatório mensal automático</h3>' +
+      '<p style="color:var(--muted);font-size:13px;margin-bottom:12px">Enviado todos os dias 1, sem esforço. Inclui receita, top faixas e novos seguidores.</p>' +
+      '<div style="font-size:13px;line-height:1.9">' +
+        '<div>💰 Receita do mês: <b style="color:var(--gold)">' + fmtKz(ARTIST_REVENUE_SERIES[ARTIST_REVENUE_SERIES.length - 1].v) + '</b></div>' +
+        '<div>🎵 Faixa nº 1: <b>' + mine[0].title + '</b></div>' +
+        '<div>➕ Novos seguidores: <b>128</b></div>' +
+      '</div>' +
+      '<button class="btn btn-ghost btn-sm" id="btnMonthlyReport" style="margin-top:14px">Ver relatório completo</button>' +
+    '</div>' +
+  '</div>' +
+
   '<div class="panel"><h3>As tuas faixas</h3><table class="data"><thead>' +
     '<tr><th>Faixa</th><th>Plays</th><th>Downloads</th><th>Pago (total)</th><th>Estado</th></tr></thead><tbody>' +
     mine.map(t => '<tr><td><b>' + t.title + '</b></td><td>' + fmtN(t.plays) + '</td><td>' + fmtN(Math.round(t.plays * 0.04)) + '</td><td style="color:var(--gold)">' + fmtKz(t.paidTotal) + '</td><td><span class="pill ok">publicada</span></td></tr>').join('') +
@@ -1213,6 +1260,61 @@ $('#main').addEventListener('click', e => {
 
 function bindView(route, params){
   const main = $('#main');
+  if(route === 'dashboard'){
+    const bk = $('#btnCompleteKyc');
+    if(bk) bk.addEventListener('click', () => {
+      openModal('<div style="text-align:left">' +
+        '<h3>Completar validação</h3>' +
+        '<p style="color:var(--muted);font-size:13px;margin-bottom:14px">Adiciona o teu BI e IBAN para poderes levantar os teus ganhos.</p>' +
+        '<div class="field"><label for="kycBI">Bilhete de Identidade</label><input id="kycBI" type="text" placeholder="007654321LA042" style="text-transform:uppercase"><div class="valid-msg" id="kycMsgBI"></div></div>' +
+        '<div class="field" style="margin-top:10px"><label for="kycIBAN">IBAN</label><input id="kycIBAN" type="text" placeholder="AO06 0040 0000 1089 4244 10175" style="text-transform:uppercase;font-family:monospace"><div class="valid-msg" id="kycMsgIBAN"></div></div>' +
+        '<div class="modal-actions" style="margin-top:16px"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Depois</button>' +
+        '<button class="btn btn-gold btn-sm" id="kycSave">Guardar e validar</button></div>' +
+      '</div>');
+      const kbi = $('#kycBI'), kib = $('#kycIBAN');
+      kbi.addEventListener('input', () => {
+        const v = validarBI_AO(kbi.value); const m = $('#kycMsgBI');
+        if(!kbi.value){ m.textContent = ''; return; }
+        m.textContent = v.ok ? '✓ BI válido' : v.motivo; m.className = 'valid-msg ' + (v.ok ? 'ok' : 'bad');
+      });
+      kib.addEventListener('input', () => {
+        const v = validarIBAN_AO(kib.value); const m = $('#kycMsgIBAN');
+        if(!kib.value){ m.textContent = ''; return; }
+        m.textContent = v.ok ? '✓ IBAN válido (checksum confere)' : v.motivo; m.className = 'valid-msg ' + (v.ok ? 'ok' : 'bad');
+      });
+      $('#kycSave').addEventListener('click', () => {
+        const bi = validarBI_AO(kbi.value), iban = validarIBAN_AO(kib.value);
+        if(!bi.ok){ toast('<b>BI inválido.</b> ' + bi.motivo, 'red'); return; }
+        if(!iban.ok){ toast('<b>IBAN inválido.</b> ' + iban.motivo, 'red'); return; }
+        S.artistProfile.bi = kbi.value.replace(/\s+/g, '').toUpperCase();
+        S.artistProfile.iban = fmtIBAN(kib.value);
+        S.artistProfile.kycCompleto = true;
+        persist(); closeModal();
+        toast('<b>Validação concluída!</b> Já podes pedir levantamentos dos teus ganhos.', 'ok');
+        render();
+      });
+    });
+    const br = $('#btnMonthlyReport');
+    if(br) br.addEventListener('click', () => {
+      const a = ARTISTS[0];
+      const mine = TRACKS.filter(t => t.artistId === a.id).sort((x, y) => y.plays - x.plays);
+      const rev = ARTIST_REVENUE_SERIES[ARTIST_REVENUE_SERIES.length - 1].v;
+      const mes = new Date().toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' });
+      openModal('<div style="text-align:left">' +
+        '<h3>📄 Relatório mensal · ' + mes + '</h3>' +
+        '<p style="color:var(--muted);font-size:13px;margin-bottom:14px">' + a.name + ' · gerado automaticamente</p>' +
+        '<div style="background:var(--surface2);border-radius:12px;padding:16px;margin-bottom:12px">' +
+          '<div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Receita do mês</div>' +
+          '<div style="font-family:var(--font-display);font-weight:900;font-size:28px;color:var(--gold)">' + fmtKz(rev) + '</div>' +
+        '</div>' +
+        '<div style="font-size:13px;font-weight:700;margin:14px 0 8px">Top faixas do mês</div>' +
+        mine.slice(0, 3).map((t, i) => '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px"><span>' + (i + 1) + '. ' + t.title + '</span><span style="color:var(--muted)">' + fmtN(t.plays) + ' plays</span></div>').join('') +
+        '<div style="display:flex;justify-content:space-between;margin-top:16px;font-size:13px"><span>Novos seguidores</span><b style="color:#33d17a">+128</b></div>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px"><span>Novos downloads</span><b>342</b></div>' +
+        '<button class="btn btn-gold btn-sm" style="margin-top:18px;width:100%" onclick="closeModal()">Fechar</button>' +
+      '</div>');
+    });
+  }
   if(route === 'videos'){
     const target = new Date(); target.setDate(target.getDate() + 45); // lançamento em ~45 dias
     const cd = () => {
@@ -1395,12 +1497,14 @@ function bindView(route, params){
     const reg = $('#btnRegisterArtist');
     if(reg) reg.addEventListener('click', () => {
       const nome = ($('#obNome').value || '').trim();
+      const temBI = !!biIn.value.trim(), temIBAN = !!ibanIn.value.trim();
       const bi = validarBI_AO(biIn.value);
       const iban = validarIBAN_AO(ibanIn.value);
       if(!nome){ toast('<b>Nome completo</b> é obrigatório.', 'red'); return; }
-      if(!bi.ok){ toast('<b>BI inválido.</b> ' + bi.motivo, 'red'); liveBI(); return; }
-      if(!iban.ok){ toast('<b>IBAN inválido.</b> ' + iban.motivo, 'red'); liveIBAN(); return; }
-      if(!photoData){ toast('<b>Fotografia</b> é obrigatória.', 'red'); return; }
+      // KYC faseado: BI/IBAN só validados SE preenchidos (podem ficar para o levantamento)
+      if(temBI && !bi.ok){ toast('<b>BI inválido.</b> ' + bi.motivo, 'red'); liveBI(); return; }
+      if(temIBAN && !iban.ok){ toast('<b>IBAN inválido.</b> ' + iban.motivo, 'red'); liveIBAN(); return; }
+      const kycCompleto = temBI && bi.ok && temIBAN && iban.ok && !!photoData;
       const isFounder = (FOUNDER_LIMIT - FOUNDER_COUNT) > 0;
       if(!isFounder && S.balance < 10000){ toast('Precisas de <b>10.000 Kz</b> para a taxa de inscrição. Recarrega primeiro.', 'red'); location.hash = '#/wallet'; return; }
       if(!isFounder){
@@ -1431,14 +1535,19 @@ function bindView(route, params){
         iban: fmtIBAN(ibanIn.value), banco: $('#obBanco').value,
         titular: ($('#obTitular').value || '').trim() || nome,
         foto: photoData, verificado: false, founder: isFounder,
+        kycCompleto,   // KYC faseado: só true se BI+IBAN+foto preenchidos
         socials,
         totalArrecadado: 0, porReceber: 0,   // contadores do artista (privados)
         criadoEm: nowStamp(),
       };
       persist(); updateWalletChip();
-      toast(isFounder
-        ? '<b>Bem-vindo, Artista Fundador!</b> Inscrição gratuita concluída + 1 mês de Premium oferecido. Já podes publicar.'
-        : '<b>Registo concluído!</b> Identidade e IBAN validados. Já podes publicar música e acompanhar os teus ganhos.', 'ok');
+      if(kycCompleto){
+        toast(isFounder
+          ? '<b>Bem-vindo, Artista Fundador!</b> Inscrição gratuita concluída + 1 mês de Premium oferecido. Já podes publicar.'
+          : '<b>Registo concluído!</b> Identidade e IBAN validados. Já podes publicar e receber pagamentos.', 'ok');
+      } else {
+        toast('<b>Perfil criado!</b> Já podes publicar música. Completa o BI e IBAN quando quiseres pedir o teu primeiro levantamento.', 'ok');
+      }
       location.hash = '#/dashboard';
       render();
     });

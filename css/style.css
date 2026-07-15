@@ -243,6 +243,36 @@ body[data-role="admin"] .nav a[data-role="admin"]{display:flex}
   transition:.15s;text-decoration:none;
 }
 .social-ico:hover{background:var(--sc);color:#fff;border-color:var(--sc);transform:translateY(-2px)}
+/* ---- KYC faseado ---- */
+.phased-note{
+  background:linear-gradient(135deg,rgba(46,125,50,.12),transparent);
+  border:1px solid rgba(46,125,50,.3);border-left:3px solid #33d17a;
+  border-radius:12px;padding:14px 18px;margin-bottom:18px;font-size:13.5px;line-height:1.6;color:var(--text);
+}
+.kyc-banner{
+  display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:14px;margin-bottom:20px;
+  background:radial-gradient(500px 180px at 90% -30%,var(--gold-soft),transparent 60%),var(--surface);
+  border:1px solid rgba(242,176,30,.35);
+}
+.kyc-ico{font-size:24px;color:var(--gold);flex-shrink:0}
+.kyc-text{flex:1;display:flex;flex-direction:column;gap:3px}
+.kyc-text b{font-size:14.5px}
+.kyc-text span{font-size:12.5px;color:var(--muted)}
+
+/* ---- alertas inteligentes do dashboard ---- */
+.alert-list{display:flex;flex-direction:column;gap:10px}
+.smart-alert{
+  display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;
+  background:var(--surface2);border:1px solid var(--line);border-left-width:3px;
+}
+.smart-alert.up{border-left-color:#33d17a}
+.smart-alert.milestone{border-left-color:var(--gold)}
+.smart-alert.follow{border-left-color:var(--red)}
+.sa-ico{font-size:22px;flex-shrink:0}
+.smart-alert div{display:flex;flex-direction:column;gap:2px}
+.smart-alert b{font-size:14px}
+.smart-alert span{font-size:12.5px;color:var(--muted)}
+
 /* ---- contadores do topo da página início ---- */
 .home-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
 .hstat{
