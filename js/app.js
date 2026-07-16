@@ -782,6 +782,23 @@ function viewUpload(){
     '</div>' +
   '</div>' +
   '</div>' +
+
+  /* ---- Contrato de Cessão de Direitos ---- */
+  '<div class="panel contract-panel">' +
+    '<div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--gold)">⚖ Declaração de Titularidade e Cessão de Direitos</div>' +
+    '<div class="contract-summary">' +
+      '<p><b>Ao publicar, declaras e aceitas que:</b></p>' +
+      '<ul>' +
+        '<li>A obra é <b>original e da tua autoria</b>, e detéis todos os direitos necessários para a licenciar.</li>' +
+        '<li>Cedes à Music AO uma <b>licença de exploração</b> (streaming, download, promoção) da obra na plataforma.</li>' +
+        '<li>A repartição de receitas é <b>70% para o artista</b> e <b>30% para a plataforma</b>.</li>' +
+        '<li>Garantes que a obra <b>não viola direitos de terceiros</b> e assumes responsabilidade por qualquer reclamação.</li>' +
+      '</ul>' +
+      '<button type="button" class="link-btn" id="btnViewContract">Ler o contrato completo →</button>' +
+    '</div>' +
+    '<label class="contract-check"><input type="checkbox" id="upContract"> <span>Li e aceito a <b>Declaração de Titularidade e Cessão de Direitos</b> e confirmo que sou o legítimo titular desta obra.</span></label>' +
+  '</div>' +
+
   '<div class="fee-note">◆ Taxa de publicação: <b>' + fmtN(FEE_UPLOAD) + ' Kz</b> — debitada da tua wallet no envio. Saldo atual: <b>' + fmtKz(S.balance) + '</b>. A faixa entra em moderação e ficas notificado da decisão.</div>' +
   '<button class="btn btn-red" id="btnPublish">Publicar e pagar ' + fmtN(FEE_UPLOAD) + ' Kz</button>' +
   (S.pendingUploads.length ?
@@ -790,6 +807,61 @@ function viewUpload(){
     S.pendingUploads.map(u => '<tr><td>' + u.title + '</td><td>' + u.genre + '</td><td>' + statusPill(u.status) + (u.flagged ? ' <span class="ai-badge" style="color:var(--red);border-color:var(--red);background:rgba(224,18,44,.1)">⚠</span>' : '') + '</td></tr>').join('') +
     '</tbody></table></div></div>' : '');
 }
+function contratoCessaoHTML(){
+  return '<div class="contract-full">' +
+    '<h3>Contrato de Licença e Cessão de Direitos de Exploração</h3>' +
+    '<p class="cf-intro">Entre o <b>Titular da Obra</b> (o "Artista") e a <b>Music AO</b> (a "Plataforma"), é celebrado o presente contrato, que o Artista aceita ao submeter conteúdo para publicação.</p>' +
+
+    '<h4>1. Declaração de Titularidade e Originalidade</h4>' +
+    '<p>1.1. O Artista declara, sob compromisso de honra, ser o autor e/ou legítimo titular de todos os direitos patrimoniais de autor e conexos sobre a obra fonográfica submetida (a "Obra"), incluindo composição, letra, interpretação, produção e masterização.</p>' +
+    '<p>1.2. O Artista garante que a Obra é original, não constitui plágio, e não incorpora, no todo ou em parte, samples, excertos, melodias ou letras de terceiros sem a devida autorização e licenciamento.</p>' +
+    '<p>1.3. Caso a Obra tenha coautores, produtores, intérpretes ou outros titulares de direitos, o Artista declara ter obtido de todos eles autorização expressa para a submissão e cessão aqui prevista, respondendo isoladamente perante os mesmos.</p>' +
+
+    '<h4>2. Objeto da Cessão e Licença de Exploração</h4>' +
+    '<p>2.1. O Artista cede à Plataforma uma <b>licença não exclusiva</b>, para o território mundial, para explorar economicamente a Obra através de streaming, download, pré-escuta (preview), inclusão em listas de reprodução, e utilização em ações promocionais da Plataforma.</p>' +
+    '<p>2.2. A licença mantém-se em vigor enquanto a Obra permanecer publicada na Plataforma e cessa com a sua remoção, sem prejuízo da liquidação de valores devidos até essa data e da manutenção de registos por obrigação legal.</p>' +
+    '<p>2.3. O Artista conserva a titularidade dos seus direitos de autor. A presente licença não constitui uma transmissão definitiva da propriedade intelectual, mas uma autorização de exploração nos termos aqui definidos.</p>' +
+
+    '<h4>3. Repartição de Receitas</h4>' +
+    '<p>3.1. Das receitas líquidas geradas pela exploração da Obra, a repartição é a seguinte: <b>70% (setenta por cento) para o Artista</b> e <b>30% (trinta por cento) para a Plataforma</b>.</p>' +
+    '<p>3.2. Entende-se por receita líquida o valor efetivamente recebido pela Plataforma, deduzido de encargos de processamento de pagamentos, impostos aplicáveis e retenções legais.</p>' +
+    '<p>3.3. A Plataforma disponibiliza ao Artista, na sua área pessoal, o registo detalhado de reproduções, downloads e valores apurados, garantindo transparência na contabilização.</p>' +
+
+    '<h4>4. Pagamentos</h4>' +
+    '<p>4.1. Os valores devidos ao Artista são creditados na sua conta da Plataforma e disponibilizados para levantamento de acordo com as modalidades vigentes (pagamento diário, semanal ou mensal), que o Artista poderá selecionar quando a funcionalidade for ativada.</p>' +
+    '<p>4.2. O levantamento depende da validação da identidade do Artista (documento de identificação e IBAN válidos) e do cumprimento das obrigações de prevenção de branqueamento de capitais.</p>' +
+    '<p>4.3. A Plataforma pode reter pagamentos associados a Obras objeto de reclamação de direitos, suspeita de fraude ou litígio, até à resolução da situação.</p>' +
+
+    '<h4>5. Garantias e Responsabilidade do Artista</h4>' +
+    '<p>5.1. O Artista garante que a exploração da Obra pela Plataforma não viola quaisquer direitos de terceiros, incluindo direitos de autor, direitos conexos, direitos de imagem ou marcas.</p>' +
+    '<p>5.2. O Artista obriga-se a <b>indemnizar e a manter a Plataforma indemne</b> (cláusula de indemnização) por quaisquer danos, custos, despesas judiciais ou honorários decorrentes de reclamações de terceiros relacionadas com a titularidade ou o conteúdo da Obra.</p>' +
+    '<p>5.3. A responsabilidade pela veracidade das declarações prestadas é exclusiva do Artista, isentando-se a Plataforma de qualquer responsabilidade perante terceiros por conteúdos submetidos indevidamente.</p>' +
+
+    '<h4>6. Conteúdo Gerado por Inteligência Artificial</h4>' +
+    '<p>6.1. O Artista obriga-se a declarar, no momento da submissão, se a Obra utilizou geração por inteligência artificial (voz, instrumentação, masterização ou letra).</p>' +
+    '<p>6.2. A declaração falsa ou omissa quanto ao uso de IA constitui incumprimento e pode determinar a remoção da Obra e a retenção de valores associados.</p>' +
+
+    '<h4>7. Moderação, Suspensão e Remoção</h4>' +
+    '<p>7.1. A Plataforma reserva-se o direito de submeter a Obra a validação prévia e de a recusar, suspender ou remover caso identifique indícios de violação de direitos, duplicação, fraude ou desconformidade com as suas políticas.</p>' +
+    '<p>7.2. A Plataforma dispõe de um procedimento de notificação e retirada (takedown) para titulares de direitos que reclamem a utilização indevida de conteúdos, com prazo de resposta adequado.</p>' +
+
+    '<h4>8. Proteção de Dados</h4>' +
+    '<p>8.1. Os dados pessoais do Artista são tratados para efeitos de gestão da relação contratual, pagamentos e cumprimento de obrigações legais, nos termos da legislação de proteção de dados aplicável em Angola.</p>' +
+
+    '<h4>9. Prevenção de Fraude e Branqueamento de Capitais</h4>' +
+    '<p>9.1. A Plataforma aplica mecanismos de deteção de reproduções artificiais e de fraude. Reproduções fraudulentas não são remuneradas e podem determinar a suspensão da conta.</p>' +
+    '<p>9.2. A Plataforma cumpre as obrigações de identificação de clientes (KYC) e de comunicação de operações suspeitas às autoridades competentes.</p>' +
+
+    '<h4>10. Vigência, Alterações e Lei Aplicável</h4>' +
+    '<p>10.1. O presente contrato vigora a partir da aceitação pelo Artista e mantém-se enquanto existir conteúdo publicado.</p>' +
+    '<p>10.2. A Plataforma pode atualizar os termos, notificando o Artista; a continuação da utilização implica aceitação das alterações.</p>' +
+    '<p>10.3. O presente contrato rege-se pela <b>lei angolana</b>. Para a resolução de litígios é competente o foro da comarca de Luanda, sem prejuízo do recurso a meios alternativos de resolução de conflitos.</p>' +
+
+    '<p class="cf-foot">Ao assinalar a caixa de aceitação e ao submeter a Obra, o Artista declara ter lido, compreendido e aceite integralmente as condições deste contrato.</p>' +
+    '<button class="btn btn-gold btn-sm" style="width:100%;margin-top:8px" onclick="closeModal()">Fechar</button>' +
+  '</div>';
+}
+
 function field(label, id, type, ph){
   return '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="' + type + '" placeholder="' + ph + '"></div>';
 }
@@ -831,6 +903,12 @@ function viewDashboard(){
       '<div style="font-family:var(--font-display);font-weight:900;font-size:32px;color:var(--gold);margin:6px 0 4px">' + fmtKz(acc.pendValor || 0) + '</div>' +
       '<p style="color:var(--muted);font-size:13px">' + fmtN(acc.pendPlays || 0) + ' plays · ' + fmtN(acc.pendDownloads || 0) + ' downloads pendentes de pagamento</p>' +
       '<p style="color:var(--muted);font-size:12px;margin-top:10px">Pago via ficheiro PSX. Após o pagamento este contador zera; o histórico mantém-se.</p>' +
+      '<button class="btn btn-withdraw" id="btnWithdraw" disabled title="Em breve poderás escolher quando receber">' +
+        '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>' +
+        ' Retirar lucros' +
+        '<span class="soon-tag">brevemente</span>' +
+      '</button>' +
+      '<p style="color:var(--muted);font-size:11px;margin-top:8px;line-height:1.5">Em breve poderás escolher receber <b>no próprio dia</b>, ou aguardar o <b>processamento semanal</b> ou <b>mensal</b>.</p>' +
     '</div>' +
     '<div class="panel">' +
       '<h3>▤ Contador histórico — desde sempre</h3>' +
@@ -1577,6 +1655,8 @@ function bindView(route, params){
     }
     const aiChk = $('#upAI');
     if(aiChk) aiChk.addEventListener('change', () => { $('#upAIType').hidden = !aiChk.checked; });
+    const vc = $('#btnViewContract');
+    if(vc) vc.addEventListener('click', () => openModal(contratoCessaoHTML()));
     $('#btnPublish').addEventListener('click', () => {
       const title = $('#upTitle').value.trim();
       const upArtist = ($('#upArtist').value || '').trim();
@@ -1585,6 +1665,9 @@ function bindView(route, params){
       const usouIA = $('#upAI').checked;
       const tiposIA = Array.from(document.querySelectorAll('.aiKind:checked')).map(c => c.value);
       if(usouIA && tiposIA.length === 0){ toast('Indica <b>o que</b> foi feito com IA (voz, instrumentação…).', 'red'); return; }
+      // Contrato de cessão de direitos — aceitação obrigatória
+      const contratoAceite = $('#upContract') && $('#upContract').checked;
+      if(!contratoAceite){ toast('<b>Tens de aceitar a Declaração de Titularidade e Cessão de Direitos</b> para publicar.', 'red'); return; }
 
       // ---- SECÇÃO 5: deteção inteligente de duplicados (hash+título+duração) ----
       const norm = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -1628,6 +1711,7 @@ function bindView(route, params){
         title, artist: upArtist, genre: $('#upGenre').value, status: estado,
         ia: usouIA, iaTipos: tiposIA, hash: fileHash, ts: agora,
         flagged: !!(hashDup || dupExistente || incoerenciaAutor || fraudeSuspeita),
+        contrato: { aceite: true, data: nowStamp(), split: '70/30', versao: '1.0' },
       });
       persist();
       const cor = (hashDup || dupExistente || incoerenciaAutor) ? 'red' : 'ok';
