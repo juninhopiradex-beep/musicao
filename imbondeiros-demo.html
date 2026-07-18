@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Music AO · Imbondeiros musicais</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body{background:#0B0B0F;color:#F5F5F7;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;margin:0;padding:40px 24px}
+  .wrap{max-width:1180px;margin:0 auto}
+  h1{font-size:30px;font-weight:900;margin:0 0 6px}
+  .sub{color:#9A9AA6;margin-bottom:34px;font-size:15px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  @media(max-width:960px){.grid{grid-template-columns:1fr}}
+  .card{background:#141419;border:1px solid #26262F;border-radius:18px;overflow:hidden}
+  .card h3{margin:0;padding:18px 20px 4px;font-size:17px;font-weight:800}
+  .card p{margin:0;padding:0 20px 16px;color:#9A9AA6;font-size:13px;line-height:1.55}
+  .preview{height:330px;position:relative;background:#0B0B0F;border-top:1px solid #26262F;border-bottom:1px solid #26262F;overflow:hidden}
+  .bg{position:absolute;inset:0;background-repeat:no-repeat;background-position:center;background-size:76% auto}
+  .fg{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px}
+  .fg .cover{width:110px;height:110px;border-radius:14px;background:linear-gradient(135deg,#E0122C,#8B1A1A);border:1px solid rgba(242,176,30,.4)}
+  .fg .t{font-weight:800;font-size:17px}
+  .fg .a{color:#E0122C;font-size:13px;font-weight:700}
+  .fg .ctrl{width:46px;height:46px;border-radius:50%;background:#E0122C;display:flex;align-items:center;justify-content:center;margin-top:6px}
+  .opts{display:flex;gap:10px;padding:14px 20px 18px;align-items:center;flex-wrap:wrap}
+  .opts label{font-size:12px;color:#9A9AA6}
+  .opts input{width:110px}
+  .val{font-size:12px;color:#F2B01E;font-weight:700;min-width:38px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Imbondeiros musicais</h1>
+  <p class="sub">Três interpretações do imbondeiro — símbolo de Angola — em SVG vetorial. Ajusta a opacidade para veres como fica no fundo das páginas. Cada um pesa cerca de 3 KB.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>A · Sonoro</h3>
+      <p>Os ramos são ondas sonoras a irradiar e a copa são ondas concêntricas — a árvore <em>é</em> o som. O mais abstrato e elegante.</p>
+      <div class="preview">
+        <div class="bg" id="bgA" style="opacity:.16"></div>
+        <div class="fg">
+          <div class="cover"></div>
+          <div class="t">Semba do Adeus</div>
+          <div class="a">Dona Rosa Semba</div>
+          <div class="ctrl">▶</div>
+        </div>
+      </div>
+      <div class="opts">
+        <label>opacidade</label>
+        <input type="range" min="3" max="80" value="16" data-t="A">
+        <span class="val" id="vA">16%</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>B · Notas</h3>
+      <p>Imbondeiro clássico com ramos orgânicos, onde as folhas são notas musicais. O mais reconhecível e figurativo.</p>
+      <div class="preview">
+        <div class="bg" id="bgB" style="opacity:.16"></div>
+        <div class="fg">
+          <div class="cover"></div>
+          <div class="t">Semba do Adeus</div>
+          <div class="a">Dona Rosa Semba</div>
+          <div class="ctrl">▶</div>
+        </div>
+      </div>
+      <div class="opts">
+        <label>opacidade</label>
+        <input type="range" min="3" max="80" value="16" data-t="B">
+        <span class="val" id="vB">16%</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>C · Equalizador</h3>
+      <p>A copa da árvore é um espectro de áudio em barras. O mais moderno e "tecnológico", liga bem à ideia de plataforma digital.</p>
+      <div class="preview">
+        <div class="bg" id="bgC" style="opacity:.16"></div>
+        <div class="fg">
+          <div class="cover"></div>
+          <div class="t">Semba do Adeus</div>
+          <div class="a">Dona Rosa Semba</div>
+          <div class="ctrl">▶</div>
+        </div>
+      </div>
+      <div class="opts">
+        <label>opacidade</label>
+        <input type="range" min="3" max="80" value="16" data-t="C">
+        <span class="val" id="vC">16%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/imbondeiros.js"></script>
+<script>
+  const map = { A:'sonoro', B:'notas', C:'equalizador' };
+  Object.entries(map).forEach(([k, nome]) => {
+    const uri = 'data:image/svg+xml;utf8,' + encodeURIComponent(IMBONDEIROS[nome].replace(/\s+/g,' '));
+    document.getElementById('bg' + k).style.backgroundImage = 'url("' + uri + '")';
+  });
+  document.querySelectorAll('input[type=range]').forEach(r => {
+    r.addEventListener('input', () => {
+      const k = r.dataset.t;
+      document.getElementById('bg' + k).style.opacity = r.value / 100;
+      document.getElementById('v' + k).textContent = r.value + '%';
+    });
+  });
+</script>
+</body>
+</html>

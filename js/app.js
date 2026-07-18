@@ -204,6 +204,25 @@ function tick(){
   if(S.elapsed >= t.dur) nextTrack();
 }
 
+/* Exige conta para ações que dependem de identidade (favoritos, downloads).
+   Devolve true se o utilizador pode prosseguir; caso contrário abre o convite a criar conta. */
+function requireAccount(acao){
+  if(S.authed) return true;
+  openModal('<div style="text-align:center">' +
+    '<div style="font-size:34px;margin-bottom:8px">🔒</div>' +
+    '<h3>Precisas de conta para ' + acao + '</h3>' +
+    '<p>Cria uma conta gratuita para guardares as tuas músicas favoritas, descarregares faixas e apoiares os artistas angolanos.</p>' +
+    '<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">' +
+      '<button class="btn btn-red" id="raCreate">Criar conta grátis</button>' +
+      '<button class="btn btn-ghost" id="raLogin">Já tenho conta</button>' +
+    '</div>' +
+    '<button class="btn btn-ghost btn-sm" style="margin-top:14px" onclick="closeModal()">Agora não</button>' +
+  '</div>');
+  $('#raCreate').addEventListener('click', () => { closeModal(); doLogin('criada'); });
+  $('#raLogin').addEventListener('click', () => { closeModal(); doLogin('iniciada'); });
+  return false;
+}
+
 function openPreviewGate(t){
   openModal('<div style="text-align:center">' +
     '<div style="font-size:34px;margin-bottom:8px">🎧</div>' +
@@ -351,6 +370,7 @@ $('#fsBar').addEventListener('click', e => {
 });
 $('#fsFav').addEventListener('click', () => {
   const t = S.queue[S.qIdx]; if(!t) return;
+  if(!requireAccount('guardar favoritos')) return;
   const i = S.liked.indexOf(t.id);
   if(i >= 0) S.liked.splice(i, 1); else { S.liked.push(t.id); toast('Adicionada às favoritas ♥', 'ok'); }
   persist(); syncFS(t);
@@ -359,9 +379,29 @@ $('#fsDl').addEventListener('click', () => { const t = S.queue[S.qIdx]; if(t) bu
 
 /* ---- Regras de download (secção 8 da especificação) ---- */
 function buyDownload(trackId){
+  // 1) precisa de conta
+  if(!requireAccount('descarregar músicas')) return;
   const t = TRACKS.find(x => x.id === trackId);
   if(S.owned.includes(trackId)){
     toast('Já tens licença de <b>' + t.title + '</b> — re-download gratuito.', 'ok');
+    return;
+  }
+  // 2) precisa de créditos: downloads da recarga, quota do plano, ou saldo suficiente
+  const temDlPack = (S.dlAvailable || 0) > 0;
+  const temQuotaPlano = isPremium() && dlLeft() > 0;
+  const temSaldo = S.balance >= PRICE_DL;
+  if(!temDlPack && !temQuotaPlano && !temSaldo){
+    openModal('<div style="text-align:center">' +
+      '<div style="font-size:34px;margin-bottom:8px">💳</div>' +
+      '<h3>Créditos insuficientes</h3>' +
+      '<p>Para descarregar precisas de <b>' + fmtN(PRICE_DL) + ' Kz</b> de saldo ou de downloads incluídos numa recarga. ' +
+      'Tens <b>' + fmtKz(S.balance) + '</b> e <b>' + (S.dlAvailable || 0) + '</b> downloads disponíveis.</p>' +
+      '<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">' +
+        '<button class="btn btn-gold" id="dlTopup">Carregar a carteira</button>' +
+      '</div>' +
+      '<button class="btn btn-ghost btn-sm" style="margin-top:14px" onclick="closeModal()">Agora não</button>' +
+    '</div>');
+    $('#dlTopup').addEventListener('click', () => { closeModal(); location.hash = '#/wallet'; });
     return;
   }
   const a = artistOf(t.artistId);
@@ -408,6 +448,13 @@ function buyDownload(trackId){
       S.paidLive[trackId] = (S.paidLive[trackId] || 0) + share;
       toast('Download concluído · <b>' + S.dlUsed + ' de ' + PREMIUM_DL_LIMIT + '</b> utilizados este mês · <b>' + share + ' Kz</b> para ' + a.name + '.', 'ok');
       if(dlLeft() === 0) toast('Utilizaste os ' + PREMIUM_DL_LIMIT + ' downloads do plano. Renovação em <b>' + renewDate() + '</b>. O streaming continua ilimitado.');
+    } else if((S.dlAvailable || 0) > 0){
+      // usa primeiro os downloads incluídos na recarga
+      S.dlAvailable--; S.owned.push(trackId);
+      S.txs.unshift({ type:'download', amount:0, desc:'Download (pacote de recarga) — ' + t.title, time: nowStamp() });
+      persist();
+      S.paidLive[trackId] = (S.paidLive[trackId] || 0) + share;
+      toast('Download concluído · restam <b>' + S.dlAvailable + '</b> downloads da tua recarga · <b>' + share + ' Kz</b> para ' + a.name + '.', 'ok');
     } else if(debit(PRICE_DL, 'Download — ' + t.title, 'download')){
       S.owned.push(trackId); persist();
       S.paidLive[trackId] = (S.paidLive[trackId] || 0) + share;
@@ -1427,6 +1474,7 @@ $('#main').addEventListener('click', e => {
   // ações que vivem dentro de uma row clicável têm de ser verificadas primeiro
   const like = e.target.closest('[data-like]');
   if(like){
+    if(!requireAccount('guardar favoritos')) return;
     const id = like.dataset.like;
     const i = S.liked.indexOf(id);
     if(i >= 0){ S.liked.splice(i, 1); }
@@ -2178,6 +2226,13 @@ document.querySelectorAll('.role-btns [data-setrole]').forEach(b =>
   b.addEventListener('click', () => setRole(b.dataset.setrole)));
 
 /* ---------- boot ---------- */
+
+/* Fundo decorativo — imbondeiro musical.
+   Variações disponíveis: 'sonoro' (ondas), 'notas' (notas musicais), 'equalizador' (barras).
+   Troca aqui para mudar o fundo de toda a aplicação. */
+const IMBONDEIRO_FUNDO = 'sonoro';
+if(typeof aplicarImbondeiro === 'function') aplicarImbondeiro(IMBONDEIRO_FUNDO, '#appBg');
+
 window.addEventListener('hashchange', render);
 document.body.dataset.role = S.role;
 document.querySelectorAll('.role-btns [data-setrole]').forEach(b => b.classList.toggle('active', b.dataset.setrole === S.role));
