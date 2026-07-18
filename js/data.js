@@ -96,7 +96,7 @@ const ADMIN_FRAUD = [
 ];
 
 const FOUNDER_LIMIT = 100;      // primeiros 100 artistas: inscrição grátis + Premium oferecido
-const FOUNDER_COUNT = 63;       // já registados (demo)
+const FOUNDER_COUNT = 10;       // já registados (10 gastas, 90 livres)
 
 const AO = new Intl.NumberFormat('pt-PT');
 const fmtKz = v => AO.format(Math.round(v)) + ' Kz';

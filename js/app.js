@@ -25,6 +25,7 @@ const S = {
   paidLive: {},                                 // incrementos live do ticker
   premiumUntil: store.get('premiumUntil', null),// timestamp de fim da subscrição (ISO) ou null
   dlUsed: store.get('dlUsed', 0),               // downloads utilizados no ciclo atual
+  dlAvailable: store.get('dlAvailable', 0),     // downloads comprados via recargas (pré-pago)
   dataMode: store.get('dataMode', 'normal'),    // economica | normal | alta
   cardPool: store.get('cardPool', []),          // cartões de recarga gerados pelo admin
   artistProfile: store.get('artistProfile', null), // perfil do artista registado (onboarding)
@@ -36,10 +37,13 @@ const S = {
   authed: store.get('authed', false),           // sessão iniciada (conta criada / login)
   planName: store.get('planName', null),         // 'Semanal' | 'Mensal'
   fraudLog: store.get('fraudLog', []),           // alertas de segurança para admin
+  adminNotifs: store.get('adminNotifs', []),     // notificações de músicas por aprovar
+  launchSubs: store.get('launchSubs', []),       // subscritores de avisos de lançamento
+  distSubmissions: store.get('distSubmissions', []), // envios para distribuição internacional
   shuffle: false, repeat: false,                 // modos do leitor
   previewMode: false,                            // reprodução atual é preview de 30s?
 };
-const persist = () => { store.set('role', S.role); store.set('balance', S.balance); store.set('owned', S.owned); store.set('txs', S.txs); store.set('pendingUploads', S.pendingUploads); store.set('followed', S.followed); store.set('premiumUntil', S.premiumUntil); store.set('dlUsed', S.dlUsed); store.set('dataMode', S.dataMode); store.set('cardPool', S.cardPool); store.set('artistProfile', S.artistProfile); store.set('liked', S.liked); store.set('playlists', S.playlists); store.set('recent', S.recent); store.set('authed', S.authed); store.set('planName', S.planName); store.set('fraudLog', S.fraudLog); };
+const persist = () => { store.set('role', S.role); store.set('balance', S.balance); store.set('owned', S.owned); store.set('txs', S.txs); store.set('pendingUploads', S.pendingUploads); store.set('followed', S.followed); store.set('premiumUntil', S.premiumUntil); store.set('dlUsed', S.dlUsed); store.set('dlAvailable', S.dlAvailable); store.set('dataMode', S.dataMode); store.set('cardPool', S.cardPool); store.set('artistProfile', S.artistProfile); store.set('liked', S.liked); store.set('playlists', S.playlists); store.set('recent', S.recent); store.set('authed', S.authed); store.set('planName', S.planName); store.set('fraudLog', S.fraudLog); store.set('adminNotifs', S.adminNotifs); store.set('launchSubs', S.launchSubs); store.set('distSubmissions', S.distSubmissions); };
 const isPremium = () => S.premiumUntil && new Date(S.premiumUntil) > new Date();
 const dlLeft = () => Math.max(0, PREMIUM_DL_LIMIT - S.dlUsed);
 const renewDate = () => S.premiumUntil ? new Date(S.premiumUntil).toLocaleDateString('pt-PT') : '—';
@@ -65,18 +69,39 @@ function validarBI_AO(raw){
 }
 function fmtIBAN(s){ return (s || '').replace(/\s+/g, '').toUpperCase().replace(/(.{4})/g, '$1 ').trim(); }
 
-const PRICE_STREAM = 10, PRICE_DL = 100, FEE_UPLOAD = 1000, ARTIST_SHARE = 0.8;
+const PRICE_STREAM = 1, PRICE_DL = 100, FEE_UPLOAD = 1000, ARTIST_SHARE = 0.8;
 const PREMIUM_PRICE = 10000;                  // plano mensal (AKZ) — atualizado
 const PLAN_WEEK = 2500, PLAN_MONTH = 10000;  // planos de subscrição
 const PLAN_WEEK_DAYS = 7, PLAN_MONTH_DAYS = 30;
 const PREVIEW_SEC = 30;                       // escuta gratuita (preview) para não-autenticados
 const PREMIUM_DL_LIMIT = 25;                  // downloads incluídos por ciclo mensal
+const ADMIN_EMAIL = 'juninhopiradex@hotmail.com';
+const ADMIN_WHATSAPP = '244924958103';
+function notificarAdminAprovacao(titulo, artista, estado){
+  // Numa arquitetura de produção, isto seria um webhook automático no servidor
+  // (e-mail via SMTP/serviço transacional + WhatsApp Business API), sem ação do utilizador.
+  // Nesta demo estática, registamos a notificação e disponibilizamos o envio pré-preenchido.
+  const msg = 'MUSIC AO — Nova musica por aprovar: "' + titulo + '" de ' + artista + ' (estado: ' + estado + '). Rever no painel de administracao.';
+  S.adminNotifs = S.adminNotifs || [];
+  S.adminNotifs.unshift({ titulo, artista, estado, quando: nowStamp(),
+    canal: 'email+whatsapp', destino: ADMIN_EMAIL + ' / +' + ADMIN_WHATSAPP });
+  persist();
+  // toast informativo com ações de envio
+  setTimeout(() => {
+    const wa = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg);
+    const mail = 'mailto:' + ADMIN_EMAIL + '?subject=' + encodeURIComponent('MUSIC AO — Música por aprovar') + '&body=' + encodeURIComponent(msg);
+    toast('🔔 Administração notificada (' + ADMIN_EMAIL + '). ' +
+      '<a href="' + wa + '" target="_blank" style="color:var(--gold);font-weight:700">WhatsApp</a> · ' +
+      '<a href="' + mail + '" style="color:var(--gold);font-weight:700">Email</a>');
+  }, 1400);
+}
+
 const LOW_BALANCE = 200;                      // limiar de aviso de saldo baixo (AKZ)
 const RECARGAS = [500, 1000, 2000];
 const CARD_META = {                          // identidade visual dos cartões de recarga
-  500:   { nome:'Recarga Essencial', tag:'Para começar a ouvir',                cls:'essencial' },
-  1000:  { nome:'Recarga Play',      tag:'Opção económica para o dia a dia',    cls:'play' },
-  2000:  { nome:'Recarga Mix',       tag:'Mais música, mais liberdade.',        cls:'max' },
+  500:   { nome:'Recarga Essencial', tag:'Inclui 50 downloads',   dls:50,  cls:'essencial' },
+  1000:  { nome:'Recarga Play',      tag:'Inclui 100 downloads',  dls:100, cls:'play' },
+  2000:  { nome:'Recarga Mix',       tag:'Inclui 200 downloads',  dls:200, cls:'max' },
 };
 const MSG_SEM_SALDO = 'O seu saldo é insuficiente. Faça uma recarga para continuar a ouvir ou descarregar músicas.';
 const CHARGE_AFTER_SEC = 5; // demo: cobra aos 5s de escuta paga (30s em produção)
@@ -574,7 +599,7 @@ function viewWallet(){
 
   return '' +
   '<div class="wallet-hero">' +
-    '<div class="eyebrow">Wallet Music AO' + (premium ? ' · <span style="color:var(--gold)">Premium ativo</span>' : '') + '</div>' +
+    '<div class="eyebrow">Carteira Music AO' + (premium ? ' · <span style="color:var(--gold)">Premium ativo</span>' : '') + '</div>' +
     '<div class="bal">' + fmtKz(S.balance) + '</div>' +
     '<p style="color:var(--muted);margin-top:8px">Streaming ' + PRICE_STREAM + ' Kz · Download ' + PRICE_DL + ' Kz · Upload de faixa ' + fmtN(FEE_UPLOAD) + ' Kz' +
       (premium ? ' <span style="color:var(--gold)">· com Premium, plays e downloads são ilimitados</span>' : '') + '</p>' +
@@ -735,7 +760,7 @@ function viewArtistOnboarding(){
   (founder ?
     '<div class="fee-note" style="margin-top:20px;background:var(--gold-soft);border-color:rgba(242,176,30,.3)">★ Como <b>Artista Fundador</b>, a tua inscrição é <b>gratuita</b> e recebes <b>1 mês de Premium</b>. Publica já; valida os dados bancários quando fores receber.</div>' +
     '<button class="btn btn-gold" id="btnRegisterArtist" style="margin-top:6px">Criar perfil e começar a publicar (Fundador)</button>' :
-    '<div class="fee-note" style="margin-top:20px">◆ Taxa de inscrição única: <b>' + fmtN(10000) + ' Kz</b> — debitada da tua wallet. Saldo atual: <b>' + fmtKz(S.balance) + '</b>. Publica já; a validação do IBAN só é precisa para levantar.</div>' +
+    '<div class="fee-note" style="margin-top:20px">◆ Taxa de inscrição única: <b>' + fmtN(10000) + ' Kz</b> — debitada da tua carteira. Saldo atual: <b>' + fmtKz(S.balance) + '</b>. Publica já; a validação do IBAN só é precisa para levantar.</div>' +
     '<button class="btn btn-red" id="btnRegisterArtist" style="margin-top:6px">Criar perfil e pagar ' + fmtN(10000) + ' Kz</button>') +
   '</div>';
 }
@@ -799,7 +824,7 @@ function viewUpload(){
     '<label class="contract-check"><input type="checkbox" id="upContract"> <span>Li e aceito a <b>Declaração de Titularidade e Cessão de Direitos</b> e confirmo que sou o legítimo titular desta obra.</span></label>' +
   '</div>' +
 
-  '<div class="fee-note">◆ Taxa de publicação: <b>' + fmtN(FEE_UPLOAD) + ' Kz</b> — debitada da tua wallet no envio. Saldo atual: <b>' + fmtKz(S.balance) + '</b>. A faixa entra em moderação e ficas notificado da decisão.</div>' +
+  '<div class="fee-note">◆ Taxa de publicação: <b>' + fmtN(FEE_UPLOAD) + ' Kz</b> — debitada da tua carteira no envio. Saldo atual: <b>' + fmtKz(S.balance) + '</b>. A faixa entra em moderação e ficas notificado da decisão.</div>' +
   '<button class="btn btn-red" id="btnPublish">Publicar e pagar ' + fmtN(FEE_UPLOAD) + ' Kz</button>' +
   (S.pendingUploads.length ?
     '<div class="section" style="margin-top:40px"><div class="section-head"><h2>Os meus envios</h2></div>' +
@@ -1234,11 +1259,157 @@ function socialIcons(socials){
   return links ? '<div class="social-row">' + links + '</div>' : '';
 }
 
+/* ============================================================
+   LANÇAMENTOS DIGITAIS  (visível apenas para administração)
+   Ouvintes subscrevem avisos de novos lançamentos por email/telefone.
+   ============================================================ */
+function viewLancamentos(){
+  if(S.role !== 'admin') return roleGate('admin', 'A página de Lançamentos Digitais está em preparação e requer perfil de administrador');
+
+  const subs = S.launchSubs || [];
+  const proximos = [
+    { titulo:'Bassula Forte (Remix)', artista:'Kalunga MC', genero:'Kuduro',   data:'25 Jul 2026', estado:'Agendado' },
+    { titulo:'Noites de Luanda',      artista:'Mena Kiz',   genero:'Kizomba',  data:'02 Ago 2026', estado:'Agendado' },
+    { titulo:'Terra Minha (Álbum)',   artista:'Dona Rosa Semba', genero:'Semba', data:'15 Ago 2026', estado:'Em preparação' },
+  ];
+
+  return '' +
+  '<div class="admin-badge">◐ Área restrita · visível apenas para administração</div>' +
+  '<div class="eyebrow">Lançamentos digitais</div>' +
+  '<h1 class="h-display" style="font-size:32px;margin-bottom:8px">Nunca percas um lançamento</h1>' +
+  '<p style="color:var(--muted);max-width:640px;margin-bottom:26px">Os ouvintes registam o email ou telefone e passam a ser avisados automaticamente sempre que houver um novo lançamento ou entrem novas músicas na plataforma.</p>' +
+
+  /* Métricas de subscritores */
+  '<div class="totals-grid">' +
+    '<div class="total-card"><div class="total-ico">✉</div><div class="total-num">' + fmtN(8420 + subs.length) + '</div><div class="total-lbl">Subscritores por email</div></div>' +
+    '<div class="total-card"><div class="total-ico">✆</div><div class="total-num">' + fmtN(5136 + subs.filter(s => s.telefone).length) + '</div><div class="total-lbl">Subscritores por SMS</div></div>' +
+    '<div class="total-card"><div class="total-ico">◐</div><div class="total-num">' + proximos.length + '</div><div class="total-lbl">Lançamentos agendados</div></div>' +
+    '<div class="total-card"><div class="total-ico">▲</div><div class="total-num">64%</div><div class="total-lbl">Taxa de abertura</div></div>' +
+  '</div>' +
+
+  /* Formulário de subscrição (o que o ouvinte vê) */
+  '<div class="section"><div class="section-head"><h2>Formulário de subscrição</h2><span style="font-size:12px;color:var(--muted)">pré-visualização do que o ouvinte vê</span></div>' +
+    '<div class="launch-form">' +
+      '<div class="lf-inner">' +
+        '<div class="lf-ico">🔔</div>' +
+        '<h3 style="font-family:var(--font-display);font-size:24px;margin-bottom:6px">Quero ser avisado</h3>' +
+        '<p style="color:var(--muted);font-size:14px;margin-bottom:20px">Recebe um aviso assim que os teus artistas favoritos lançarem música nova.</p>' +
+        '<div class="form-grid">' +
+          '<div class="field"><label for="lsEmail">Email</label><input id="lsEmail" type="email" placeholder="o.teu.email@exemplo.ao"><div class="valid-msg" id="lsMsgEmail"></div></div>' +
+          '<div class="field"><label for="lsTel">Telefone (opcional)</label><input id="lsTel" type="tel" placeholder="+244 9XX XXX XXX"><div class="valid-msg" id="lsMsgTel"></div></div>' +
+        '</div>' +
+        '<div class="lf-prefs">' +
+          '<div style="font-size:13px;font-weight:700;margin-bottom:10px">Quero ser avisado sobre:</div>' +
+          '<label class="chk"><input type="checkbox" class="lsPref" value="Todos os lançamentos" checked> Todos os lançamentos da plataforma</label>' +
+          '<label class="chk"><input type="checkbox" class="lsPref" value="Artistas que sigo" checked> Apenas artistas que sigo</label>' +
+          '<label class="chk"><input type="checkbox" class="lsPref" value="Género favorito"> Novidades do meu género favorito</label>' +
+        '</div>' +
+        '<label class="chk" style="margin:14px 0"><input type="checkbox" id="lsConsent"> <span style="font-size:12.5px">Autorizo a Music AO a contactar-me por email/SMS sobre lançamentos. Posso cancelar a qualquer momento.</span></label>' +
+        '<button class="btn btn-red" id="btnSubscribeLaunch" style="width:100%">Avisem-me dos lançamentos</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>' +
+
+  /* Próximos lançamentos */
+  '<div class="section"><div class="section-head"><h2>Próximos lançamentos agendados</h2></div>' +
+    '<div class="panel"><table class="data"><thead><tr><th>Faixa / Álbum</th><th>Artista</th><th>Género</th><th>Data</th><th>Estado</th></tr></thead><tbody>' +
+    proximos.map(l => '<tr><td><b>' + l.titulo + '</b></td><td>' + l.artista + '</td><td>' + l.genero + '</td><td>' + l.data + '</td><td>' +
+      '<span class="pill ' + (l.estado === 'Agendado' ? 'ok' : 'warn') + '">' + l.estado + '</span></td></tr>').join('') +
+    '</tbody></table>' +
+    '<button class="btn btn-gold btn-sm" id="btnNotifyAll" style="margin-top:16px">Enviar aviso a todos os subscritores</button>' +
+    '</div>' +
+  '</div>' +
+
+  /* Subscritores registados nesta sessão */
+  (subs.length ?
+  '<div class="section"><div class="section-head"><h2>Subscrições recentes</h2></div>' +
+    '<div class="panel"><table class="data"><thead><tr><th>Email</th><th>Telefone</th><th>Preferências</th><th>Data</th></tr></thead><tbody>' +
+    subs.slice(0, 10).map(s => '<tr><td>' + s.email + '</td><td>' + (s.telefone || '—') + '</td><td style="color:var(--muted)">' + s.prefs.join(', ') + '</td><td style="color:var(--muted)">' + s.quando + '</td></tr>').join('') +
+    '</tbody></table></div></div>' : '');
+}
+
+/* ============================================================
+   DISTRIBUIÇÃO INTERNACIONAL  (visível apenas para administração)
+   Upload de single ou álbum para distribuição global, com contrato 70/30.
+   ============================================================ */
+function viewDistribuicao(){
+  if(S.role !== 'admin') return roleGate('admin', 'A página de Distribuição Internacional está em preparação e requer perfil de administrador');
+
+  const lojas = ['Spotify','Apple Music','YouTube Music','Deezer','Amazon Music','Tidal','Boomplay','Audiomack','SoundCloud','TikTok','Instagram / Facebook','Napster'];
+  const envios = S.distSubmissions || [];
+
+  return '' +
+  '<div class="admin-badge">◎ Área restrita · visível apenas para administração</div>' +
+  '<div class="eyebrow">Distribuição internacional</div>' +
+  '<h1 class="h-display" style="font-size:32px;margin-bottom:8px">A tua música em todo o mundo</h1>' +
+  '<p style="color:var(--muted);max-width:640px;margin-bottom:26px">Envia um single ou um álbum completo e a Music AO trata da distribuição para as principais plataformas internacionais, com pagamento de royalties em kwanzas.</p>' +
+
+  /* Lojas de destino */
+  '<div class="section"><div class="section-head"><h2>Plataformas de destino</h2><span style="font-size:12px;color:var(--muted)">' + lojas.length + ' lojas digitais</span></div>' +
+    '<div class="store-grid">' + lojas.map(l => '<div class="store-chip">' + l + '</div>').join('') + '</div>' +
+  '</div>' +
+
+  /* Formulário de envio */
+  '<div class="section"><div class="section-head"><h2>Novo envio para distribuição</h2></div>' +
+    '<div class="panel">' +
+      '<div class="dist-type">' +
+        '<label class="dist-opt sel"><input type="radio" name="distType" value="single" checked> <div><b>Single</b><span>Uma faixa</span></div></label>' +
+        '<label class="dist-opt"><input type="radio" name="distType" value="album"> <div><b>Álbum / EP</b><span>Várias faixas</span></div></label>' +
+      '</div>' +
+      '<div class="form-grid" style="margin-top:18px">' +
+        field('Título do lançamento *', 'dsTitle', 'text', 'Nome do single ou álbum') +
+        field('Artista principal *', 'dsArtist', 'text', 'Nome artístico') +
+        selectField('Género *', 'dsGenre', GENRES.map(g => g.name)) +
+        field('Data de lançamento *', 'dsDate', 'date', '') +
+        field('ISRC (se existir)', 'dsISRC', 'text', 'AO-XXX-26-00001') +
+        field('Editora / Selo', 'dsLabel', 'text', 'Independente') +
+      '</div>' +
+      '<div class="dropzone" id="dsDrop" style="margin-top:18px">' +
+        '<div class="dz-ico">⭱</div>' +
+        '<div><b>Arrasta os ficheiros de áudio</b><br><span style="color:var(--muted);font-size:13px">WAV ou FLAC · 16/24-bit · mínimo 44,1 kHz · um ficheiro por faixa</span></div>' +
+      '</div>' +
+      '<div id="dsFiles" class="dz-files"></div>' +
+      '<div class="dropzone" id="dsCover" style="margin-top:12px">' +
+        '<div class="dz-ico">▣</div>' +
+        '<div><b>Capa do lançamento</b><br><span style="color:var(--muted);font-size:13px">JPG ou PNG · mínimo 3000×3000 px · sem logótipos de terceiros</span></div>' +
+      '</div>' +
+
+      /* Contrato 70/30 */
+      '<div class="dist-contract">' +
+        '<div class="dc-head">⚖ Condições de distribuição e repartição de receitas</div>' +
+        '<div class="dc-split">' +
+          '<div class="dc-part artist"><div class="dc-pct">70%</div><div class="dc-lbl">Artista</div></div>' +
+          '<div class="dc-part platform"><div class="dc-pct">30%</div><div class="dc-lbl">Music AO</div></div>' +
+        '</div>' +
+        '<ul class="dc-terms">' +
+          '<li>O Artista declara ser o <b>legítimo titular</b> de todos os direitos sobre a obra distribuída.</li>' +
+          '<li>Concede à Music AO <b>licença não exclusiva</b> de distribuição para as plataformas selecionadas.</li>' +
+          '<li>Repartição das receitas líquidas: <b>70% para o Artista</b>, <b>30% para a Music AO</b>.</li>' +
+          '<li>Royalties pagos em <b>kwanzas</b>, por transferência para o IBAN validado.</li>' +
+          '<li>O Artista <b>mantém a titularidade</b> da sua obra e pode distribuí-la por outros meios.</li>' +
+        '</ul>' +
+        '<button type="button" class="link-btn" id="btnDistContract">Ler o contrato completo →</button>' +
+        '<label class="contract-check" style="margin-top:12px"><input type="checkbox" id="dsContract"> <span>Li e aceito as <b>Condições de Distribuição Internacional</b> e a repartição de <b>70% artista / 30% plataforma</b>.</span></label>' +
+      '</div>' +
+
+      '<button class="btn btn-red" id="btnSubmitDist" style="margin-top:18px">Enviar para distribuição</button>' +
+    '</div>' +
+  '</div>' +
+
+  /* Envios registados */
+  (envios.length ?
+  '<div class="section"><div class="section-head"><h2>Envios recentes</h2></div>' +
+    '<div class="panel"><table class="data"><thead><tr><th>Lançamento</th><th>Tipo</th><th>Artista</th><th>Data</th><th>Estado</th></tr></thead><tbody>' +
+    envios.slice(0, 10).map(e => '<tr><td><b>' + e.titulo + '</b></td><td>' + e.tipo + '</td><td>' + e.artista + '</td><td style="color:var(--muted)">' + e.quando + '</td><td>' + statusPill(e.estado) + '</td></tr>').join('') +
+    '</tbody></table></div></div>' : '');
+}
+
 const routes = {
   home: viewHome, explorar: viewExplorar, pesquisa: viewPesquisa,
   artista: viewArtista, wallet: viewWallet, upload: viewUpload,
   dashboard: viewDashboard, admin: viewAdmin, pagamentos: viewPagamentos,
   biblioteca: viewBiblioteca, playlist: viewPlaylist, link: viewLink, videos: viewVideos,
+  lancamentos: viewLancamentos, distribuicao: viewDistribuicao,
 };
 
 function render(){
@@ -1338,6 +1509,91 @@ $('#main').addEventListener('click', e => {
 
 function bindView(route, params){
   const main = $('#main');
+
+  /* ---- LANÇAMENTOS DIGITAIS ---- */
+  if(route === 'lancamentos'){
+    const bs = $('#btnSubscribeLaunch');
+    if(bs) bs.addEventListener('click', () => {
+      const email = ($('#lsEmail').value || '').trim();
+      const tel = ($('#lsTel').value || '').trim();
+      const prefs = Array.from(document.querySelectorAll('.lsPref:checked')).map(c => c.value);
+      const consent = $('#lsConsent').checked;
+      const emailOK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      const telOK = !tel || /^(\+?244)?\s?9\d{2}\s?\d{3}\s?\d{3}$/.test(tel.replace(/\s/g, ''));
+      if(!emailOK){ toast('<b>Email inválido.</b> Indica um endereço válido para receberes os avisos.', 'red'); return; }
+      if(!telOK){ toast('<b>Telefone inválido.</b> Usa o formato +244 9XX XXX XXX.', 'red'); return; }
+      if(!prefs.length){ toast('Escolhe pelo menos <b>um tipo de aviso</b>.', 'red'); return; }
+      if(!consent){ toast('Tens de <b>autorizar o contacto</b> para subscreveres os avisos.', 'red'); return; }
+      S.launchSubs = S.launchSubs || [];
+      S.launchSubs.unshift({ email, telefone: tel, prefs, quando: nowStamp() });
+      persist();
+      toast('<b>Subscrição confirmada!</b> Vais ser avisado' + (tel ? ' por email e SMS' : ' por email') + ' sobre novos lançamentos.', 'ok');
+      render();
+    });
+    const bn = $('#btnNotifyAll');
+    if(bn) bn.addEventListener('click', () => {
+      const n = 8420 + (S.launchSubs || []).length;
+      openModal('<h3>Enviar aviso de lançamento</h3>' +
+        '<p>Vais notificar <b>' + fmtN(n) + ' subscritores</b> por email e SMS sobre os lançamentos agendados.</p>' +
+        '<p style="font-size:13px;color:var(--muted)">Em produção, o envio é feito por serviço transacional de email e API de SMS/WhatsApp, com controlo de frequência para evitar saturação.</p>' +
+        '<div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancelar</button>' +
+        '<button class="btn btn-gold btn-sm" id="confirmNotify">Enviar avisos</button></div>');
+      $('#confirmNotify').addEventListener('click', () => {
+        closeModal();
+        toast('A preparar envio para ' + fmtN(n) + ' subscritores…');
+        setTimeout(() => toast('<b>Avisos enviados</b> · ' + fmtN(n) + ' subscritores notificados dos próximos lançamentos.', 'ok'), 1500);
+      });
+    });
+  }
+
+  /* ---- DISTRIBUIÇÃO INTERNACIONAL ---- */
+  if(route === 'distribuicao'){
+    // seleção visual do tipo (single/álbum)
+    main.querySelectorAll('.dist-opt').forEach(o => o.addEventListener('click', () => {
+      main.querySelectorAll('.dist-opt').forEach(x => x.classList.remove('sel'));
+      o.classList.add('sel');
+    }));
+    // simulação de upload de faixas
+    let distFiles = [];
+    const drop = $('#dsDrop'), filesBox = $('#dsFiles');
+    const addFile = () => {
+      const tipo = (main.querySelector('input[name="distType"]:checked') || {}).value || 'single';
+      const n = distFiles.length + 1;
+      const nome = 'faixa_' + String(n).padStart(2, '0') + '_master.wav';
+      if(tipo === 'single' && distFiles.length >= 1){ toast('Um <b>single</b> aceita apenas uma faixa. Muda para <b>Álbum / EP</b> para enviar mais.', 'red'); return; }
+      distFiles.push(nome);
+      filesBox.innerHTML = distFiles.map((f, i) => '<div class="dz-file"><span>♪</span> <b>' + f + '</b> <span style="color:var(--muted)">· 48 kHz · 24-bit · ' + (28 + i * 3) + ' MB</span></div>').join('');
+      toast('Ficheiro adicionado: <b>' + nome + '</b>');
+    };
+    if(drop){
+      drop.addEventListener('click', addFile);
+      drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+      drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+      drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); addFile(); });
+    }
+    const cover = $('#dsCover');
+    if(cover) cover.addEventListener('click', () => { cover.classList.add('ok'); toast('Capa carregada · 3000×3000 px ✓', 'ok'); });
+    const dc = $('#btnDistContract');
+    if(dc) dc.addEventListener('click', () => openModal(contratoCessaoHTML()));
+    const sub = $('#btnSubmitDist');
+    if(sub) sub.addEventListener('click', () => {
+      const titulo = ($('#dsTitle').value || '').trim();
+      const artista = ($('#dsArtist').value || '').trim();
+      const tipo = (main.querySelector('input[name="distType"]:checked') || {}).value === 'album' ? 'Álbum / EP' : 'Single';
+      if(!titulo){ toast('<b>Título em falta.</b> Indica o nome do lançamento.', 'red'); return; }
+      if(!artista){ toast('<b>Artista em falta.</b> Indica o nome artístico.', 'red'); return; }
+      if(!distFiles.length){ toast('<b>Falta o áudio.</b> Adiciona pelo menos uma faixa.', 'red'); return; }
+      if(!$('#dsContract').checked){ toast('Tens de aceitar as <b>Condições de Distribuição (70/30)</b> para enviar.', 'red'); return; }
+      S.distSubmissions = S.distSubmissions || [];
+      S.distSubmissions.unshift({ titulo, artista, tipo, faixas: distFiles.length, estado: 'Em Validação',
+        quando: nowStamp(), contrato: { aceite: true, split: '70/30', data: nowStamp() } });
+      persist();
+      toast('<b>Enviado para distribuição!</b> "' + titulo + '" (' + tipo + ', ' + distFiles.length + ' faixa' + (distFiles.length > 1 ? 's' : '') + ') está em validação. Prazo típico: 3-7 dias até estar nas lojas.', 'ok');
+      notificarAdminAprovacao(titulo, artista, 'Distribuição — Em Validação');
+      render();
+    });
+  }
+
   if(route === 'dashboard'){
     const bk = $('#btnCompleteKyc');
     if(bk) bk.addEventListener('click', () => {
@@ -1479,8 +1735,10 @@ function bindView(route, params){
       if(card && card.estado === 'Disponível'){
         card.estado = 'Utilizado'; card.ativadoEm = nowStamp();
         credit(card.valor, 'Ativação de cartão ' + CARD_META[card.valor].nome + ' (' + code + ')');
+        const dls = (CARD_META[card.valor] && CARD_META[card.valor].dls) || 0;
+        if(dls){ S.dlAvailable += dls; }
         persist();
-        toast('<b>' + CARD_META[card.valor].nome + '</b> ativada: <b>+' + fmtN(card.valor) + ' Kz</b> na tua carteira.', 'ok');
+        toast('<b>' + CARD_META[card.valor].nome + '</b> ativada: <b>+' + fmtN(card.valor) + ' Kz</b>' + (dls ? ' e <b>+' + dls + ' downloads</b>' : '') + ' na tua carteira.', 'ok');
         render();
       } else if(card){
         toast('Este cartão já foi utilizado ou está bloqueado (estado: ' + card.estado + '). Cada cartão só pode ser usado uma vez.', 'red');
@@ -1493,12 +1751,19 @@ function bindView(route, params){
       const method = main.querySelector('.method.sel').dataset.method;
       openModal('<h3>Recarga de ' + fmtN(amt) + ' Kz</h3>' +
         '<p>Método: <b style="color:var(--text)">' + method + '</b>. Em produção serias redirecionado para o gateway; nesta demo a confirmação chega pelo webhook em segundos.</p>' +
+        (method === 'PayPal' ? '<p style="font-size:13px;color:var(--muted)">Pagamento PayPal para: <b style="color:var(--gold)">juninhopiradex@hotmail.com</b></p>' : '') +
         '<div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancelar</button>' +
         '<button class="btn btn-gold btn-sm" id="confirmTopup">Pagar agora</button></div>');
       $('#confirmTopup').addEventListener('click', () => {
         closeModal();
         toast('Recarga iniciada — a aguardar confirmação de <b>' + method + '</b>…');
-        setTimeout(() => { credit(amt, 'Recarga ' + method); toast('Recarga confirmada: <b>+' + fmtN(amt) + ' Kz</b> na tua wallet.', 'ok'); if(location.hash.includes('wallet')) render(); }, 1800);
+        setTimeout(() => {
+          credit(amt, 'Recarga ' + method);
+          const dls = (CARD_META[amt] && CARD_META[amt].dls) || 0;
+          if(dls){ S.dlAvailable += dls; persist(); }
+          toast('Recarga confirmada: <b>+' + fmtN(amt) + ' Kz</b>' + (dls ? ' e <b>+' + dls + ' downloads</b>' : '') + ' na tua carteira.', 'ok');
+          if(location.hash.includes('wallet')) render();
+        }, 1800);
       });
     });
     main.querySelectorAll('.plan-btn').forEach(bp => bp.addEventListener('click', () => {
@@ -1717,6 +1982,8 @@ function bindView(route, params){
       const cor = (hashDup || dupExistente || incoerenciaAutor) ? 'red' : 'ok';
       toast('<b>' + estado + '</b> · ' + msg, cor);
       if(alerta) setTimeout(() => toast('⚠ Alerta de segurança registado para a administração (evidências e logs guardados).', 'red'), 900);
+      // Notificação automática ao admin de música por aprovar (email + WhatsApp)
+      notificarAdminAprovacao(title, S.artistProfile.artistico || S.artistProfile.nome, estado);
       render();
     });
   }

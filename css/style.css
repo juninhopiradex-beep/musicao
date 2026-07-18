@@ -243,6 +243,73 @@ body[data-role="admin"] .nav a[data-role="admin"]{display:flex}
   transition:.15s;text-decoration:none;
 }
 .social-ico:hover{background:var(--sc);color:#fff;border-color:var(--sc);transform:translateY(-2px)}
+/* ---- área restrita (admin) ---- */
+.admin-badge{
+  display:inline-block;background:rgba(224,18,44,.12);border:1px solid rgba(224,18,44,.35);
+  color:var(--red);font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:6px 12px;border-radius:20px;margin-bottom:18px;
+}
+
+/* ---- lançamentos digitais ---- */
+.launch-form{
+  background:radial-gradient(700px 300px at 50% -20%,rgba(224,18,44,.16),transparent 60%),var(--surface);
+  border:1px solid var(--line);border-radius:20px;padding:34px 30px;
+}
+.lf-inner{max-width:560px;margin:0 auto;text-align:center}
+.lf-inner .form-grid,.lf-inner .lf-prefs,.lf-inner .chk{text-align:left}
+.lf-ico{font-size:40px;margin-bottom:10px}
+.lf-prefs{
+  background:var(--surface2);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;margin-top:14px;display:flex;flex-direction:column;gap:8px;
+}
+.chk{display:flex;gap:9px;align-items:flex-start;font-size:13px;cursor:pointer;line-height:1.5}
+.chk input{margin-top:2px;flex-shrink:0}
+
+/* ---- distribuição internacional ---- */
+.store-grid{display:flex;flex-wrap:wrap;gap:10px}
+.store-chip{
+  background:var(--surface2);border:1px solid var(--line);border-radius:20px;
+  padding:9px 16px;font-size:13px;font-weight:600;transition:.15s;
+}
+.store-chip:hover{border-color:var(--gold);color:var(--gold)}
+.dist-type{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dist-opt{
+  display:flex;gap:12px;align-items:center;padding:16px 18px;border-radius:12px;cursor:pointer;
+  background:var(--surface2);border:1px solid var(--line);transition:.15s;
+}
+.dist-opt.sel{border-color:var(--red);background:rgba(224,18,44,.08)}
+.dist-opt div{display:flex;flex-direction:column;gap:2px}
+.dist-opt b{font-size:14.5px}
+.dist-opt span{font-size:12px;color:var(--muted)}
+.dz-files{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.dz-file{
+  background:var(--surface2);border:1px solid var(--line);border-radius:10px;
+  padding:10px 14px;font-size:13px;display:flex;gap:8px;align-items:center;
+}
+.dropzone.ok{border-color:#33d17a;background:rgba(51,209,122,.06)}
+
+/* contrato 70/30 na distribuição */
+.dist-contract{
+  margin-top:20px;background:var(--surface2);border:1px solid rgba(242,176,30,.3);
+  border-radius:14px;padding:20px;
+}
+.dc-head{font-weight:700;font-size:14px;color:var(--gold);margin-bottom:16px}
+.dc-split{display:flex;gap:12px;margin-bottom:16px}
+.dc-part{flex:1;border-radius:12px;padding:16px;text-align:center}
+.dc-part.artist{background:linear-gradient(135deg,rgba(51,209,122,.18),rgba(51,209,122,.06));border:1px solid rgba(51,209,122,.35)}
+.dc-part.platform{background:linear-gradient(135deg,rgba(242,176,30,.18),rgba(242,176,30,.06));border:1px solid rgba(242,176,30,.35)}
+.dc-pct{font-family:var(--font-display);font-weight:900;font-size:34px;line-height:1}
+.dc-part.artist .dc-pct{color:#33d17a}
+.dc-part.platform .dc-pct{color:var(--gold)}
+.dc-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
+.dc-terms{list-style:none;display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--muted);margin-bottom:14px}
+.dc-terms li{padding-left:18px;position:relative;line-height:1.55}
+.dc-terms li::before{content:'▪';position:absolute;left:3px;color:var(--gold)}
+@media (max-width:760px){
+  .dist-type{grid-template-columns:1fr}
+  .dc-split{flex-direction:column}
+}
+
 /* ---- contrato de cessão de direitos ---- */
 .contract-panel{border-color:rgba(242,176,30,.3)}
 .contract-summary{font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:14px}
