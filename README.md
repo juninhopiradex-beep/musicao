@@ -17,6 +17,7 @@
 | **Administração** | KPIs globais, fila de moderação (aprovar/rejeitar), eventos de fraude |
 | **Transparência** | Contador ao vivo de AKZ pagos aos artistas em cada faixa e no hero |
 | **Perfis** | Comutador demo Ouvinte / Artista / Admin na barra lateral |
+| **Selos de CD** | Códigos de acesso para edições físicas: gera chaves únicas por disco, QR da capa, folhas A4 para a gráfica e painel de ativações. **100.000 Kz por álbum** |
 
 Todos os dados são fictícios e o estado (saldo, licenças, subscrição, uploads, perfil de artista) fica guardado no browser (localStorage).
 
@@ -81,7 +82,45 @@ css/style.css       design system — preto profundo, vermelho e dourado, Unboun
 js/data.js          catálogo demo (artistas, faixas, géneros, séries de receita)
 js/audio.js         motor Web Audio — groove generativo por género/BPM/tom
 js/app.js           router, vistas, player, wallet, upload, dashboards, moderação
+js/qr.js            codificador QR (sem dependências)
+js/selos.js         módulo Selos de CD — geração de códigos, exportações, impressão
+css/selos.css       estilos do módulo Selos de CD
+unlock/             backend de validação (Cloudflare Worker) — deploy à parte
+ferramentas/        gerador de chaves offline, para usar sem a plataforma
 ```
+
+
+## Selos de CD — acesso digital nas edições físicas
+
+Cada CD vendido leva um cartão selado com um código único. O QR impresso na capa
+abre a página de validação, o comprador escreve o código e o acesso digital abre.
+**Uma vez só** — quem partilhar o código não desbloqueia nada a mais.
+
+O artista entra em **Selos de CD** (perfil Artista), cria a edição, e recebe:
+
+- os códigos únicos, com verificação matemática (HMAC-SHA256, alfabeto Crockford)
+- o QR da capa em SVG
+- folhas A4 com 10 cartões de 90×54 mm, prontas para a gráfica
+- CSV separado para a gráfica (série + código) e para o backend (só hashes SHA-256)
+- painel de ativações e verificador para o apoio ao cliente
+
+### Duas barreiras
+
+1. **Checksum HMAC** — um código inventado é rejeitado sem sequer consultar a base
+   de dados. Uma hipótese em 1.048.576.
+2. **`UPDATE ... WHERE status='unused'`** — atómico. Doze pedidos em simultâneo
+   sobre o mesmo código: só um vence.
+
+### O backend
+
+O protótipo gera os códigos; a validação do comprador corre no Worker em
+`unlock/`, com deploy separado na Cloudflare (instruções em `unlock/README.md`).
+Enquanto não estiver no ar, o botão **Simular ativação** mostra o comportamento
+do painel.
+
+O endereço do QR está em `js/selos.js` (`UNLOCK_BASE`). **Muda para o teu domínio
+próprio antes de gerar códigos a sério** — fica impresso para sempre nos discos, e
+com um `workers.dev` ficas preso ao fornecedor.
 
 ## Próximos passos (produção)
 

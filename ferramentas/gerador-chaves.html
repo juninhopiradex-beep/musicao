@@ -1,0 +1,654 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gerador de Chaves · BeatFreak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --carbon:#14161B; --slab:#1C2027; --slab2:#22272F; --rule:#2C323C;
+  --ink:#E4E7ED; --mute:#7E8798; --reg:#17B8C4; --foil:#C9A227; --stop:#D9534F; --go:#4CAF7D;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --sans:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--carbon);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;font-weight:800;letter-spacing:-.02em}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--reg);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ── cabeçalho ─────────────────────────────── */
+.top{border-bottom:1px solid var(--rule);padding:22px 26px 18px;display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.top h1{font-size:19px;text-transform:uppercase;letter-spacing:.12em}
+.top h1 span{color:var(--reg)}
+.runout{flex:1;min-width:180px;height:11px;border:1px solid var(--rule);border-radius:99px;position:relative;overflow:hidden;opacity:.85}
+.runout::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,var(--rule) 0 1px,transparent 1px 9px);opacity:.6}
+.tag{font-family:var(--mono);font-size:11px;color:var(--mute);letter-spacing:.08em}
+
+/* ── grelha ────────────────────────────────── */
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 396px;gap:0;align-items:start}
+@media(max-width:1080px){.wrap{grid-template-columns:1fr}}
+.main{padding:26px;min-width:0}
+.side{padding:26px 26px 26px 0;position:sticky;top:0}
+@media(max-width:1080px){.side{position:static;padding:0 26px 26px}}
+
+/* ── passos ────────────────────────────────── */
+.step{border:1px solid var(--rule);background:var(--slab);margin-bottom:18px}
+.step>header{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--rule);background:var(--slab2)}
+.num{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--carbon);background:var(--reg);padding:3px 7px;letter-spacing:.05em}
+.step h2{font-size:13px;text-transform:uppercase;letter-spacing:.14em;font-weight:600}
+.step .hint{margin-left:auto;font-size:12px;color:var(--mute)}
+.body{padding:18px}
+
+label{display:block;font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.13em;color:var(--mute);margin-bottom:6px}
+input[type=text],input[type=number],select,textarea{width:100%;background:var(--carbon);border:1px solid var(--rule);padding:9px 11px;border-radius:2px}
+input:hover,select:hover{border-color:#3A424E}
+.row{display:grid;gap:14px}
+.r2{grid-template-columns:1fr 1fr}
+.r3{grid-template-columns:1fr 1fr 1fr}
+.r4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:620px){.r2,.r3,.r4{grid-template-columns:1fr}}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+
+.btn{background:var(--slab2);border:1px solid var(--rule);padding:9px 15px;cursor:pointer;border-radius:2px;font-size:13px;font-weight:500;transition:background .12s,border-color .12s}
+.btn:hover{background:#2A313A;border-color:#3D4653}
+.btn.pri{background:var(--reg);color:#08282B;border-color:var(--reg);font-weight:700}
+.btn.pri:hover{background:#22CBD8}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btns{display:flex;gap:9px;flex-wrap:wrap}
+
+.warn{border-left:3px solid var(--foil);background:rgba(201,162,39,.07);padding:11px 14px;font-size:13px;margin-top:14px}
+.warn b{color:var(--foil)}
+.danger{border-left-color:var(--stop);background:rgba(217,83,79,.08)}
+.danger b{color:var(--stop)}
+
+.key-out{font-family:var(--mono);font-size:12.5px;word-break:break-all;background:var(--carbon);border:1px dashed var(--rule);padding:11px;color:var(--foil);border-radius:2px}
+
+/* ── tabela ────────────────────────────────── */
+.tblwrap{max-height:340px;overflow:auto;border:1px solid var(--rule);border-radius:2px}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+th{position:sticky;top:0;background:var(--slab2);text-align:left;padding:8px 11px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);border-bottom:1px solid var(--rule);font-weight:400}
+td{padding:7px 11px;border-bottom:1px solid rgba(44,50,60,.5)}
+td.code{color:var(--foil);font-weight:700;letter-spacing:.04em}
+td.hash{color:var(--mute);font-size:10.5px}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:16px}
+@media(max-width:620px){.stats{grid-template-columns:1fr 1fr}}
+.stat{background:var(--slab);padding:12px 14px}
+.stat b{display:block;font-family:var(--mono);font-size:20px;color:var(--reg);font-weight:700;line-height:1.2}
+.stat span{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--mute)}
+
+/* ── prova / proof ─────────────────────────── */
+.proof{border:1px solid var(--rule);background:var(--slab);padding:20px}
+.proof h3{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--mute);font-weight:600;margin-bottom:4px}
+.proof .sub{font-size:11.5px;color:var(--mute);margin-bottom:16px;font-family:var(--mono)}
+.stage{background:#0C0E11;padding:22px;display:flex;justify-content:center;border:1px solid var(--rule)}
+
+/* cartão — 90×54mm à escala */
+.card{width:315px;height:189px;background:#fff;color:#111;position:relative;display:flex;flex-direction:column;font-family:var(--sans)}
+.card .marks span{position:absolute;width:9px;height:9px;border:0 solid #B9BFC7}
+.card .marks span:nth-child(1){top:-1px;left:-1px;border-top-width:1px;border-left-width:1px}
+.card .marks span:nth-child(2){top:-1px;right:-1px;border-top-width:1px;border-right-width:1px}
+.card .marks span:nth-child(3){bottom:-1px;left:-1px;border-bottom-width:1px;border-left-width:1px}
+.card .marks span:nth-child(4){bottom:-1px;right:-1px;border-bottom-width:1px;border-right-width:1px}
+.card .hd{padding:11px 14px 8px;border-bottom:1px solid #E2E5EA;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card .alb{font-weight:800;font-size:13px;letter-spacing:-.01em;text-transform:uppercase;line-height:1.15;overflow:hidden}
+.card .art{font-size:9.5px;color:#6A727E;letter-spacing:.06em;text-transform:uppercase}
+.card .lot{font-family:var(--mono);font-size:8.5px;color:#969DA8;letter-spacing:.06em;white-space:nowrap}
+.card .mid{flex:1;display:flex;gap:13px;padding:11px 14px;align-items:center}
+.card .qr{width:74px;height:74px;flex:none}
+.card .qr svg{width:100%;height:100%;display:block}
+.card .info{min-width:0;flex:1}
+.card .lbl{font-family:var(--mono);font-size:7.5px;letter-spacing:.16em;color:#8A919C;text-transform:uppercase;margin-bottom:5px}
+.card .code{font-family:var(--mono);font-weight:700;font-size:15.5px;letter-spacing:.01em;color:#101418;white-space:nowrap}
+.card .ser{font-family:var(--mono);font-size:8.5px;color:#969DA8;margin-top:6px;letter-spacing:.05em}
+.card .ft{padding:7px 14px 9px;border-top:1px solid #E2E5EA;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.card .url{font-family:var(--mono);font-size:8px;color:#6A727E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .once{font-family:var(--mono);font-size:7.5px;letter-spacing:.11em;color:#fff;background:#101418;padding:2px 6px;white-space:nowrap}
+
+.proofnote{font-size:11.5px;color:var(--mute);margin-top:14px;line-height:1.5}
+
+.verify{margin-top:16px;border-top:1px solid var(--rule);padding-top:16px}
+.vres{margin-top:10px;font-family:var(--mono);font-size:12px;padding:9px 11px;border-radius:2px;display:none}
+.vres.ok{display:block;background:rgba(76,175,125,.1);border-left:3px solid var(--go);color:var(--go)}
+.vres.no{display:block;background:rgba(217,83,79,.1);border-left:3px solid var(--stop);color:var(--stop)}
+
+.empty{color:var(--mute);font-size:13px;padding:26px;text-align:center;border:1px dashed var(--rule)}
+code.inl{font-family:var(--mono);font-size:12px;background:var(--carbon);padding:1px 5px;border:1px solid var(--rule);color:var(--reg)}
+
+/* ── impressão ─────────────────────────────── */
+#sheets{display:none}
+@media print{
+  @page{size:A4;margin:8mm 14mm}
+  body{background:#fff;color:#000}
+  .top,.wrap{display:none!important}
+  #sheets{display:block!important}
+  .sheet{width:180mm;page-break-after:always;display:grid;grid-template-columns:90mm 90mm;grid-auto-rows:54mm;gap:0;justify-content:center}
+  .sheet:last-child{page-break-after:auto}
+  .pcard{width:90mm;height:54mm;border:.2mm solid #C8CDD4;position:relative;overflow:hidden;display:flex;flex-direction:column;background:#fff;color:#111;font-family:var(--sans)}
+  .pcard .hd{padding:3mm 4mm 2mm;border-bottom:.2mm solid #E2E5EA;display:flex;justify-content:space-between;align-items:baseline;gap:2mm}
+  .pcard .alb{font-weight:800;font-size:9.5pt;text-transform:uppercase;line-height:1.1}
+  .pcard .art{font-size:6pt;color:#6A727E;letter-spacing:.06em;text-transform:uppercase}
+  .pcard .lot{font-family:var(--mono);font-size:5.5pt;color:#969DA8;white-space:nowrap}
+  .pcard .mid{flex:1;display:flex;gap:4mm;padding:3mm 4mm;align-items:center}
+  .pcard .qr{width:21mm;height:21mm;flex:none}
+  .pcard .qr svg{width:100%;height:100%;display:block}
+  .pcard .lbl{font-family:var(--mono);font-size:5pt;letter-spacing:.15em;color:#8A919C;text-transform:uppercase;margin-bottom:1.5mm}
+  .pcard .code{font-family:var(--mono);font-weight:700;font-size:11.5pt;letter-spacing:.01em;white-space:nowrap}
+  .pcard .ser{font-family:var(--mono);font-size:5.5pt;color:#969DA8;margin-top:2mm}
+  .pcard .ft{padding:2mm 4mm 2.5mm;border-top:.2mm solid #E2E5EA;display:flex;justify-content:space-between;gap:2mm;align-items:center}
+  .pcard .url{font-family:var(--mono);font-size:5pt;color:#6A727E;overflow:hidden;white-space:nowrap}
+  .pcard .once{font-family:var(--mono);font-size:5pt;letter-spacing:.1em;color:#fff;background:#101418;padding:.6mm 1.6mm;white-space:nowrap}
+}
+</style>
+
+<div class="top">
+  <h1>BeatFreak <span>/</span> Gerador de Chaves</h1>
+  <div class="runout" aria-hidden="true"></div>
+  <div class="tag" id="tagline">SEM LOTE · v1.0</div>
+</div>
+
+<div class="wrap">
+<div class="main">
+
+  <!-- 01 -->
+  <section class="step">
+    <header><span class="num">01</span><h2>Chave mestra</h2><span class="hint">nunca sai desta máquina</span></header>
+    <div class="body">
+      <div class="field">
+        <label for="master">Segredo HMAC (64 hex)</label>
+        <input type="text" id="master" spellcheck="false" placeholder="gera ou cola o segredo do teu cofre">
+      </div>
+      <div class="btns">
+        <button class="btn pri" id="bGen">Gerar segredo novo</button>
+        <button class="btn" id="bImp">Abrir cofre (.json)</button>
+        <input type="file" id="fImp" accept=".json" hidden>
+      </div>
+      <div class="warn danger">
+        <b>Guarda isto antes de continuar.</b> Todas as chaves de todos os lotes deste álbum saem deste segredo.
+        Se o perderes, não consegues gerar mais chaves compatíveis nem reemitir cartões perdidos. Se vazar,
+        qualquer pessoa fabrica chaves válidas. Usa um segredo diferente por artista.
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 -->
+  <section class="step">
+    <header><span class="num">02</span><h2>Lote</h2><span class="hint">o que vai impresso</span></header>
+    <div class="body">
+      <div class="row r2">
+        <div class="field"><label for="album">Álbum</label><input type="text" id="album" value="GOSTOS ANTECIPADOS"></div>
+        <div class="field"><label for="artist">Artista</label><input type="text" id="artist" value="PIRADEX"></div>
+      </div>
+      <div class="field">
+        <label for="url">Endereço do QR — o teu Worker (igual em todos os CDs)</label>
+        <input type="text" id="url" spellcheck="false" value="https://unlock.musicao.ao/u/ga">
+      </div>
+      <div class="row r4">
+        <div class="field"><label for="prefix">Prefixo</label><input type="text" id="prefix" value="GA" maxlength="4" spellcheck="false"></div>
+        <div class="field"><label for="lot">N.º de lote</label><input type="text" id="lot" value="001" maxlength="6" spellcheck="false"></div>
+        <div class="field"><label for="qty">Quantidade</label><input type="number" id="qty" value="500" min="1" max="20000"></div>
+        <div class="field"><label for="start">Série inicial</label><input type="number" id="start" value="1" min="1"></div>
+      </div>
+      <div class="warn danger">
+        <b>Usa domínio próprio, não um workers.dev.</b> Este endereço fica impresso para sempre em 500 discos.
+        Com domínio teu, mudas de servidor quando quiseres e os CDs continuam a funcionar. Com o endereço
+        do fornecedor, ficas preso a ele — e no dia em que mudares, os discos vendidos deixam de abrir.
+      </div>
+      <div class="warn">
+        <b>Curto é melhor.</b> Menos caracteres, menos denso o QR, melhor lê em papel brilhante.
+        <code class="inl">/u/ga</code> lê melhor que <code class="inl">/unlock/gostos-antecipados-2026</code>.
+        O <code class="inl">/u/ga</code> tem de bater certo com o slug no <code class="inl">worker.js</code>.
+      </div>
+      <div class="warn">
+        <b>Lotes futuros:</b> mantém o mesmo segredo e o mesmo prefixo, muda o n.º de lote e a série inicial
+        (ex.: próxima prensagem começa em 501). As chaves nunca se repetem.
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section class="step">
+    <header><span class="num">03</span><h2>Gerar</h2><span class="hint" id="genHint">—</span></header>
+    <div class="body">
+      <div class="btns" style="margin-bottom:16px">
+        <button class="btn pri" id="bRun">Gerar chaves</button>
+        <button class="btn" id="bClear" disabled>Limpar</button>
+      </div>
+      <div class="stats" id="stats" hidden>
+        <div class="stat"><b id="sQty">0</b><span>chaves</span></div>
+        <div class="stat"><b id="sVer">—</b><span>versão QR</span></div>
+        <div class="stat"><b id="sPages">0</b><span>folhas A4</span></div>
+        <div class="stat"><b id="sDup">0</b><span>colisões</span></div>
+      </div>
+      <div id="tblHost"><div class="empty">Ainda não há chaves. Define o segredo e o lote, depois gera.</div></div>
+    </div>
+  </section>
+
+  <!-- 04 -->
+  <section class="step">
+    <header><span class="num">04</span><h2>Exportar</h2><span class="hint">três destinos diferentes</span></header>
+    <div class="body">
+      <div class="btns">
+        <button class="btn pri" id="bPrint" disabled>Imprimir cartões</button>
+        <button class="btn" id="bCsvG" disabled>CSV para a gráfica</button>
+        <button class="btn" id="bCsvB" disabled>CSV para o backend</button>
+        <button class="btn" id="bVault" disabled>Cofre (.json)</button>
+        <button class="btn" id="bQr" disabled>QR da capa (.svg)</button>
+        <button class="btn" id="bWorker" disabled>Verificador (.js)</button>
+      </div>
+      <div class="warn">
+        <b>Quem recebe o quê.</b> A gráfica só leva série + código — nunca o segredo.
+        O backend só leva série + hash SHA-256 — nunca o código em claro, para que um vazamento da base de dados
+        não permita desbloquear nada. O cofre é só teu.
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- lado direito -->
+<aside class="side">
+  <div class="proof">
+    <h3>Prova de impressão</h3>
+    <div class="sub" id="proofMeta">90 × 54 mm · escala 1:1 aprox.</div>
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="marks" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <div class="hd">
+          <div><div class="alb" id="cAlb">GOSTOS ANTECIPADOS</div><div class="art" id="cArt">PIRADEX</div></div>
+          <div class="lot" id="cLot">LOTE 001</div>
+        </div>
+        <div class="mid">
+          <div class="qr" id="cQr"></div>
+          <div class="info">
+            <div class="lbl">Código de acesso</div>
+            <div class="code" id="cCode">GA-••••-••••-••••</div>
+            <div class="ser" id="cSer">N.º 0001 / 0500</div>
+          </div>
+        </div>
+        <div class="ft">
+          <div class="url" id="cUrl">beatfreakstudio.com/unlock</div>
+          <div class="once">USO ÚNICO</div>
+        </div>
+      </div>
+    </div>
+    <p class="proofnote">Vai selado dentro da caixa. O QR é igual em todos os discos — só o código muda.
+      Antes de mandar 500, imprime uma folha e faz o scan com o telemóvel.</p>
+
+    <div class="verify">
+      <label for="vin">Verificar um código</label>
+      <input type="text" id="vin" spellcheck="false" placeholder="GA-7K2M-9QX4-P3TZ">
+      <div class="vres" id="vres"></div>
+    </div>
+  </div>
+</aside>
+</div>
+
+<div id="sheets"></div>
+
+<script>
+/* ══════════════════════════════════════════════
+   QR — codificador (bytes, nível M, versões 1–10)
+   ══════════════════════════════════════════════ */
+const QR=(()=>{
+const EXP=new Uint8Array(512),LOG=new Uint8Array(256);
+(()=>{let x=1;for(let i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&0x100)x^=0x11D;}for(let i=255;i<512;i++)EXP[i]=EXP[i-255];})();
+const gmul=(a,b)=>(a===0||b===0)?0:EXP[LOG[a]+LOG[b]];
+function genPoly(d){let p=[1];for(let i=0;i<d;i++){const n=new Array(p.length+1).fill(0);for(let j=0;j<p.length;j++){n[j]^=p[j];n[j+1]^=gmul(p[j],EXP[i]);}p=n;}return p;}
+function eccOf(data,n){const g=genPoly(n),r=new Uint8Array(n);
+  for(let k=0;k<data.length;k++){const f=data[k]^r[0];
+    for(let i=0;i<n-1;i++)r[i]=r[i+1]^gmul(g[i+1],f);r[n-1]=gmul(g[n],f);}
+  return r;}
+const EC={1:[10,[[1,16]]],2:[16,[[1,28]]],3:[26,[[1,44]]],4:[18,[[2,32]]],5:[24,[[2,43]]],
+ 6:[16,[[4,27]]],7:[18,[[4,31]]],8:[22,[[2,38],[2,39]]],9:[22,[[3,36],[2,37]]],10:[26,[[4,43],[1,44]]]};
+const AL={1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]};
+
+function encode(text){
+  const bytes=Array.from(new TextEncoder().encode(text));
+  let ver=0,inf=null;
+  for(let v=1;v<=10;v++){const[el,gr]=EC[v];const cap=gr.reduce((s,[n,d])=>s+n*d,0);const cci=v<10?8:16;
+    if(Math.ceil((4+cci+bytes.length*8)/8)<=cap){ver=v;inf={el,gr,cap,cci};break;}}
+  if(!ver)throw new Error('Endereço demasiado longo para o QR (máx. ~210 caracteres). Encurta o link.');
+  const bits=[],push=(v,l)=>{for(let i=l-1;i>=0;i--)bits.push((v>>i)&1);};
+  push(4,4);push(bytes.length,inf.cci);for(const b of bytes)push(b,8);
+  push(0,Math.min(4,inf.cap*8-bits.length));
+  while(bits.length%8)bits.push(0);
+  const data=[];for(let i=0;i<bits.length;i+=8){let b=0;for(let j=0;j<8;j++)b=(b<<1)|bits[i+j];data.push(b);}
+  const pad=[0xEC,0x11];let pi=0;while(data.length<inf.cap)data.push(pad[pi++%2]);
+  const dB=[],eB=[];let p=0;
+  for(const[n,dl]of inf.gr)for(let i=0;i<n;i++){const blk=data.slice(p,p+dl);p+=dl;dB.push(blk);eB.push(eccOf(blk,inf.el));}
+  const fin=[],maxD=Math.max(...dB.map(b=>b.length));
+  for(let i=0;i<maxD;i++)for(const b of dB)if(i<b.length)fin.push(b[i]);
+  for(let i=0;i<inf.el;i++)for(const b of eB)fin.push(b[i]);
+  return build(ver,fin);
+}
+function build(ver,cw){
+  const size=17+4*ver;
+  const m=Array.from({length:size},()=>new Array(size).fill(0));
+  const fn=Array.from({length:size},()=>new Array(size).fill(false));
+  const set=(r,c,v)=>{if(r<0||c<0||r>=size||c>=size)return;m[r][c]=v;fn[r][c]=true;};
+  const finder=(r0,c0)=>{for(let dr=-1;dr<=7;dr++)for(let dc=-1;dc<=7;dc++){
+    const inR=(dr>=0&&dr<=6&&dc>=0&&dc<=6)&&((dr===0||dr===6||dc===0||dc===6)||(dr>=2&&dr<=4&&dc>=2&&dc<=4));
+    set(r0+dr,c0+dc,inR?1:0);}};
+  finder(0,0);finder(0,size-7);finder(size-7,0);
+  for(let i=8;i<size-8;i++){set(6,i,i%2===0?1:0);set(i,6,i%2===0?1:0);}
+  for(const r of AL[ver])for(const c of AL[ver]){
+    if((r<=8&&c<=8)||(r<=8&&c>=size-9)||(r>=size-9&&c<=8))continue;
+    for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++)set(r+dr,c+dc,Math.max(Math.abs(dr),Math.abs(dc))!==1?1:0);}
+  set(size-8,8,1);
+  for(let i=0;i<9;i++){if(!fn[8][i])set(8,i,0);if(!fn[i][8])set(i,8,0);}
+  for(let i=0;i<8;i++){if(!fn[8][size-1-i])set(8,size-1-i,0);if(!fn[size-1-i][8])set(size-1-i,8,0);}
+  if(ver>=7)for(let i=0;i<6;i++)for(let j=0;j<3;j++){set(size-11+j,i,0);set(i,size-11+j,0);}
+  let bi=0;const nb=()=>{const ix=bi>>3;const b=ix<cw.length?(cw[ix]>>(7-(bi&7)))&1:0;bi++;return b;};
+  for(let col=size-1;col>=1;col-=2){if(col===6)col=5;
+    const up=((col+1)&2)===0;
+    for(let i=0;i<size;i++){const row=up?size-1-i:i;
+      for(let k=0;k<2;k++){const c=col-k;if(!fn[row][c])m[row][c]=nb();}}}
+  const MK=[(r,c)=>(r+c)%2===0,(r,c)=>r%2===0,(r,c)=>c%3===0,(r,c)=>(r+c)%3===0,
+    (r,c)=>((Math.floor(r/2)+Math.floor(c/3))%2)===0,(r,c)=>((r*c)%2+(r*c)%3)===0,
+    (r,c)=>(((r*c)%2+(r*c)%3)%2)===0,(r,c)=>(((r+c)%2+(r*c)%3)%2)===0];
+  let best=null,bp=Infinity;
+  for(let k=0;k<8;k++){
+    const t=m.map(r=>r.slice());
+    for(let r=0;r<size;r++)for(let c=0;c<size;c++)if(!fn[r][c]&&MK[k](r,c))t[r][c]^=1;
+    fmt(t,size,k);if(ver>=7)vinfo(t,size,ver);
+    const p=penalty(t,size);if(p<bp){bp=p;best=t;}}
+  return best;
+}
+function fmt(t,size,mk){
+  const d=(0<<3)|mk;let v=d<<10;
+  for(let i=14;i>=10;i--)if((v>>i)&1)v^=0x537<<(i-10);
+  const bits=((d<<10)|v)^0x5412,bit=i=>(bits>>i)&1;
+  for(let i=0;i<=5;i++)t[i][8]=bit(i);
+  t[7][8]=bit(6);t[8][8]=bit(7);t[8][7]=bit(8);
+  for(let i=9;i<=14;i++)t[8][14-i]=bit(i);
+  for(let i=0;i<8;i++)t[8][size-1-i]=bit(i);
+  for(let i=8;i<15;i++)t[size-15+i][8]=bit(i);
+  t[size-8][8]=1;
+}
+function vinfo(t,size,ver){
+  let rem=ver;for(let i=0;i<12;i++)rem=(rem<<1)^((rem>>>11)*0x1F25);
+  const bits=(ver<<12)|rem;
+  for(let i=0;i<18;i++){const b=(bits>>i)&1,a=size-11+i%3,bb=Math.floor(i/3);t[a][bb]=b;t[bb][a]=b;}
+}
+function penalty(t,s){
+  let p=0;
+  for(let r=0;r<s;r++){let n=1;for(let c=1;c<s;c++){if(t[r][c]===t[r][c-1])n++;else{if(n>=5)p+=3+(n-5);n=1;}}if(n>=5)p+=3+(n-5);}
+  for(let c=0;c<s;c++){let n=1;for(let r=1;r<s;r++){if(t[r][c]===t[r-1][c])n++;else{if(n>=5)p+=3+(n-5);n=1;}}if(n>=5)p+=3+(n-5);}
+  for(let r=0;r<s-1;r++)for(let c=0;c<s-1;c++){const v=t[r][c];if(v===t[r][c+1]&&v===t[r+1][c]&&v===t[r+1][c+1])p+=3;}
+  const pt=[1,0,1,1,1,0,1];
+  const has=(a,i)=>{for(let k=0;k<7;k++)if(a[i+k]!==pt[k])return false;return true;};
+  const lt=(a,i,l)=>{for(let k=i;k<i+l;k++){if(k<0||k>=a.length)continue;if(a[k]!==0)return false;}return true;};
+  for(let r=0;r<s;r++){const w=t[r];for(let c=0;c+7<=s;c++)if(has(w,c)&&(lt(w,c-4,4)||lt(w,c+7,4)))p+=40;}
+  for(let c=0;c<s;c++){const w=[];for(let r=0;r<s;r++)w.push(t[r][c]);for(let r=0;r+7<=s;r++)if(has(w,r)&&(lt(w,r-4,4)||lt(w,r+7,4)))p+=40;}
+  let d=0;for(let r=0;r<s;r++)for(let c=0;c<s;c++)d+=t[r][c];
+  p+=Math.floor(Math.abs(d*100/(s*s)-50)/5)*10;
+  return p;
+}
+function svg(text,quiet=2){
+  const m=encode(text),n=m.length,t=n+quiet*2,d=[];
+  for(let r=0;r<n;r++){let c=0;while(c<n){if(m[r][c]){let w=1;while(c+w<n&&m[r][c+w])w++;d.push(`M${c+quiet} ${r+quiet}h${w}v1h-${w}z`);c+=w;}else c++;}}
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${t} ${t}" shape-rendering="crispEdges"><rect width="${t}" height="${t}" fill="#fff"/><path fill="#000" d="${d.join('')}"/></svg>`;
+}
+return{svg,version:t=>(encode(t).length-17)/4};
+})();
+
+/* ══════════════════════════════════════════════
+   Chaves
+   ══════════════════════════════════════════════ */
+const A32='0123456789ABCDEFGHJKMNPQRSTVWXYZ'; // Crockford: sem I L O U
+const enc=new TextEncoder();
+const hex=b=>[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+const unhex=s=>new Uint8Array(s.match(/../g).map(h=>parseInt(h,16)));
+
+function b32(bytes,chars){let bits=0,val=0,out='';
+  for(const b of bytes){val=(val<<8)|b;bits+=8;
+    while(bits>=5){out+=A32[(val>>(bits-5))&31];bits-=5;if(out.length>=chars)return out;}}
+  return out;}
+
+async function hmacKey(hexSecret){
+  return crypto.subtle.importKey('raw',unhex(hexSecret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+}
+async function mac(key,msg){return new Uint8Array(await crypto.subtle.sign('HMAC',key,enc.encode(msg)));}
+async function sha256(s){return hex(new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(s))));}
+
+async function makeKey(key,prefix,serial){
+  const pay=b32(await mac(key,`${prefix}|P|${serial}`),8);
+  const chk=b32(await mac(key,`${prefix}|C|${pay}`),4);
+  return `${prefix}-${pay.slice(0,4)}-${pay.slice(4,8)}-${chk}`;
+}
+const normal=c=>c.toUpperCase().replace(/[^0-9A-Z]/g,'').replace(/O/g,'0').replace(/[IL]/g,'1').replace(/U/g,'V');
+
+async function checkKey(key,prefix,code){
+  const n=normal(code),p=prefix.toUpperCase();
+  if(!n.startsWith(p))return false;
+  const rest=n.slice(p.length);
+  if(rest.length!==12)return false;
+  const pay=rest.slice(0,8),chk=rest.slice(8);
+  return chk===b32(await mac(key,`${p}|C|${pay}`),4);
+}
+
+/* ══════════════════════════════════════════════
+   Estado + UI
+   ══════════════════════════════════════════════ */
+const $=s=>document.querySelector(s);
+let KEYS=[],META=null,QRSVG='';
+
+const dl=(name,text,mime='text/plain')=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type:mime+';charset=utf-8'}));
+  a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+};
+const slug=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'lote';
+
+function refreshProof(){
+  const q=+$('#qty').value||1, pad=String(q).length<4?4:String(q).length;
+  $('#cAlb').textContent=$('#album').value||'—';
+  $('#cArt').textContent=$('#artist').value||'—';
+  $('#cLot').textContent='LOTE '+($('#lot').value||'—');
+  $('#cSer').textContent=`N.º ${String(+$('#start').value||1).padStart(pad,'0')} / ${String(q).padStart(pad,'0')}`;
+  $('#cUrl').textContent=($('#url').value||'').replace(/^https?:\/\//,'');
+  $('#cCode').textContent=KEYS.length?KEYS[0].code:`${($('#prefix').value||'XX').toUpperCase()}-••••-••••-••••`;
+  const u=$('#url').value||'';
+  try{QRSVG=QR.svg(u||'https://exemplo.com',3);$('#cQr').innerHTML=QRSVG;
+      const v=QR.version(u);
+      let extra='';
+      if(/workers\.dev|pages\.dev|github\.io/.test(u)) extra=' · ⚠ endereço do fornecedor, usa domínio próprio';
+      else if(v>=6) extra=' · ⚠ endereço longo, QR denso';
+      $('#proofMeta').textContent=`90 × 54 mm · QR versão ${v}${extra}`;}
+  catch(e){$('#cQr').innerHTML='';$('#proofMeta').textContent=e.message;}
+}
+['album','artist','lot','qty','start','url','prefix'].forEach(id=>$('#'+id).addEventListener('input',refreshProof));
+
+$('#bGen').onclick=()=>{
+  $('#master').value=hex(crypto.getRandomValues(new Uint8Array(32)));
+  $('#master').focus();$('#master').select();
+};
+$('#bImp').onclick=()=>$('#fImp').click();
+$('#fImp').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    const v=JSON.parse(await f.text());
+    if(v.master)$('#master').value=v.master;
+    if(v.album)$('#album').value=v.album;
+    if(v.artist)$('#artist').value=v.artist;
+    if(v.url)$('#url').value=v.url;
+    if(v.prefix)$('#prefix').value=v.prefix;
+    if(v.lot)$('#lot').value=v.lot;
+    if(v.nextSerial)$('#start').value=v.nextSerial;
+    refreshProof();
+    $('#genHint').textContent='Cofre carregado · próxima série '+(v.nextSerial||'?');
+  }catch(err){$('#genHint').textContent='Ficheiro inválido';}
+  e.target.value='';
+};
+
+$('#bRun').onclick=async()=>{
+  const m=$('#master').value.trim().toLowerCase();
+  if(!/^[0-9a-f]{64}$/.test(m)){$('#genHint').textContent='Segredo tem de ser 64 caracteres hex';return;}
+  const prefix=($('#prefix').value||'XX').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(!prefix){$('#genHint').textContent='Define um prefixo';return;}
+  const qty=Math.max(1,Math.min(20000,+$('#qty').value||1));
+  const start=Math.max(1,+$('#start').value||1);
+  $('#bRun').disabled=true;$('#genHint').textContent='a gerar…';
+  await new Promise(r=>setTimeout(r,20));
+
+  const key=await hmacKey(m);
+  const seen=new Set();let dup=0;KEYS=[];
+  const pad=String(start+qty-1).length<4?4:String(start+qty-1).length;
+  for(let i=0;i<qty;i++){
+    const serial=start+i;
+    let code=await makeKey(key,prefix,serial);
+    if(seen.has(code)){dup++;continue;}
+    seen.add(code);
+    KEYS.push({serial,label:String(serial).padStart(pad,'0'),code,hash:await sha256(normal(code))});
+    if(i%400===0)await new Promise(r=>setTimeout(r,0));
+  }
+  META={master:m,album:$('#album').value,artist:$('#artist').value,url:$('#url').value,
+    prefix,lot:$('#lot').value,qty:KEYS.length,startSerial:start,nextSerial:start+qty,
+    generated:new Date().toISOString(),scheme:'crockford32/hmac-sha256/8+4'};
+  render();
+  $('#bRun').disabled=false;$('#genHint').textContent='pronto';
+};
+
+function render(){
+  const n=KEYS.length;
+  $('#stats').hidden=false;
+  $('#sQty').textContent=n;
+  try{$('#sVer').textContent=QR.version($('#url').value);}catch{$('#sVer').textContent='—';}
+  $('#sPages').textContent=Math.ceil(n/10);
+  $('#sDup').textContent=META.qty!==(META.nextSerial-META.startSerial)?(META.nextSerial-META.startSerial-META.qty):0;
+  $('#tagline').textContent=`${META.prefix}·LOTE ${META.lot} · ${n} CHAVES`;
+
+  const rows=KEYS.slice(0,200).map(k=>
+    `<tr><td>${k.label}</td><td class="code">${k.code}</td><td class="hash">${k.hash.slice(0,20)}…</td></tr>`).join('');
+  $('#tblHost').innerHTML=`<div class="tblwrap"><table><thead><tr><th>Série</th><th>Código</th><th>SHA-256</th></tr></thead><tbody>${rows}</tbody></table></div>`+
+    (n>200?`<p style="color:var(--mute);font-size:12px;margin:10px 0 0">Mostradas as primeiras 200 de ${n}. As restantes estão nos ficheiros.</p>`:'');
+
+  ['bClear','bPrint','bCsvG','bCsvB','bVault','bQr','bWorker'].forEach(i=>$('#'+i).disabled=false);
+  refreshProof();
+  buildSheets();
+}
+
+$('#bClear').onclick=()=>{
+  KEYS=[];META=null;$('#stats').hidden=true;$('#sheets').innerHTML='';
+  $('#tblHost').innerHTML='<div class="empty">Ainda não há chaves. Define o segredo e o lote, depois gera.</div>';
+  ['bClear','bPrint','bCsvG','bCsvB','bVault','bQr','bWorker'].forEach(i=>$('#'+i).disabled=true);
+  $('#tagline').textContent='SEM LOTE · v1.0';refreshProof();
+};
+
+/* folhas A4 — 10 cartões por folha */
+function buildSheets(){
+  const host=$('#sheets');host.innerHTML='';
+  const urlTxt=(META.url||'').replace(/^https?:\/\//,'');
+  const total=String(META.qty).padStart(KEYS[0].label.length,'0');
+  let html='';
+  for(let i=0;i<KEYS.length;i+=10){
+    html+='<div class="sheet">';
+    for(const k of KEYS.slice(i,i+10)){
+      html+=`<div class="pcard">
+        <div class="hd"><div><div class="alb">${esc(META.album)}</div><div class="art">${esc(META.artist)}</div></div>
+        <div class="lot">LOTE ${esc(META.lot)}</div></div>
+        <div class="mid"><div class="qr">${QRSVG}</div>
+        <div><div class="lbl">Código de acesso</div><div class="code">${k.code}</div>
+        <div class="ser">N.º ${k.label} / ${total}</div></div></div>
+        <div class="ft"><div class="url">${esc(urlTxt)}</div><div class="once">USO ÚNICO</div></div></div>`;
+    }
+    html+='</div>';
+  }
+  host.innerHTML=html;
+}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+$('#bPrint').onclick=()=>window.print();
+const csv=r=>r.map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+
+$('#bCsvG').onclick=()=>dl(`chaves-grafica-${slug(META.album)}-lote${META.lot}.csv`,
+  '\ufeff'+csv([['serie','codigo'],...KEYS.map(k=>[k.label,k.code])]),'text/csv');
+
+$('#bCsvB').onclick=()=>dl(`chaves-backend-${slug(META.album)}-lote${META.lot}.csv`,
+  csv([['serie','codigo_sha256','album','lote','prefixo'],
+       ...KEYS.map(k=>[k.label,k.hash,META.album,META.lot,META.prefix])]),'text/csv');
+
+$('#bVault').onclick=()=>dl(`COFRE-${slug(META.album)}-lote${META.lot}.json`,
+  JSON.stringify(META,null,2),'application/json');
+
+$('#bQr').onclick=()=>dl(`qr-capa-${slug(META.album)}.svg`,QR.svg(META.url,4),'image/svg+xml');
+
+$('#bWorker').onclick=()=>dl('verificador.js',`// Verificação de chave — BeatFreak / Music AO
+// Confirma que o código foi mesmo emitido por ti, sem tocar na base de dados.
+// Só as chaves que passam aqui devem consultar o estado de resgate.
+// Álbum: ${META.album} · prefixo: ${META.prefix}
+// O segredo vive no vault do servidor. Nunca no código, nunca no browser.
+
+const A32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+function b32(bytes, chars) {
+  let bits = 0, val = 0, out = '';
+  for (const b of bytes) {
+    val = (val << 8) | b; bits += 8;
+    while (bits >= 5) { out += A32[(val >> (bits - 5)) & 31]; bits -= 5; if (out.length >= chars) return out; }
+  }
+  return out;
+}
+
+// Corrige os enganos típicos de quem escreve à mão: O→0, I/L→1, U→V
+const normalize = c => c.toUpperCase().replace(/[^0-9A-Z]/g, '')
+  .replace(/O/g, '0').replace(/[IL]/g, '1').replace(/U/g, 'V');
+
+async function hmac(secretHex, msg) {
+  const raw = new Uint8Array(secretHex.match(/../g).map(h => parseInt(h, 16)));
+  const key = await crypto.subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg)));
+}
+
+export async function verifyKey(code, secretHex, prefix = '${META.prefix}') {
+  const n = normalize(code);
+  if (!n.startsWith(prefix)) return null;
+  const rest = n.slice(prefix.length);
+  if (rest.length !== 12) return null;
+  const payload = rest.slice(0, 8), checksum = rest.slice(8);
+  const expected = b32(await hmac(secretHex, \`\${prefix}|C|\${payload}\`), 4);
+  if (checksum !== expected) return null;
+  return n; // devolve a forma normalizada — usa esta para o SHA-256
+}
+
+export async function keyHash(normalizedCode) {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalizedCode));
+  return [...new Uint8Array(d)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+// Uso no endpoint de resgate:
+//   const n = await verifyKey(body.code, env.HMAC_SECRET);
+//   if (!n) return json({ error: 'Código inválido' }, 400);   // nem chega à base de dados
+//   const row = await db.find(await keyHash(n));
+//   if (!row) return json({ error: 'Código inválido' }, 400);
+//   if (row.status === 'redeemed') return json({ error: 'Código já usado' }, 409);
+//   ...marcar como resgatado e devolver os links
+`,'application/javascript');
+
+/* verificador local */
+let vt;
+$('#vin').addEventListener('input',e=>{
+  clearTimeout(vt);
+  vt=setTimeout(async()=>{
+    const box=$('#vres'),raw=e.target.value.trim();
+    if(!raw){box.className='vres';return;}
+    const m=$('#master').value.trim().toLowerCase();
+    if(!/^[0-9a-f]{64}$/.test(m)){box.className='vres no';box.textContent='Define primeiro o segredo';return;}
+    const prefix=($('#prefix').value||'XX').toUpperCase();
+    const key=await hmacKey(m);
+    const ok=await checkKey(key,prefix,raw);
+    if(!ok){box.className='vres no';box.textContent='✕ Checksum não bate — código inválido ou mal escrito';return;}
+    const n=normal(raw);
+    const hit=KEYS.find(k=>normal(k.code)===n);
+    box.className='vres ok';
+    box.textContent=hit?`✓ Válido · série ${hit.label} deste lote`:'✓ Válido · não pertence a este lote (outro lote ou outra série)';
+  },160);
+});
+
+refreshProof();
+</script>

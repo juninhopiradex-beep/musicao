@@ -1,12 +1,15 @@
 /* Music AO — Service Worker (cache-first para o shell da app) */
-const CACHE = 'musicao-v1';
+const CACHE = 'musicao-v2';   // subir a cada atualização — senão o browser serve a versão antiga
 const ASSETS = [
   './',
   './index.html',
   './css/style.css',
+  './css/selos.css',
   './js/data.js',
   './js/audio.js',
   './js/app.js',
+  './js/qr.js',
+  './js/selos.js',
   './manifest.webmanifest',
 ];
 
