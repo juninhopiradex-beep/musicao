@@ -1,0 +1,390 @@
+// Gerado a partir de unlock.tpl.html — a página que o Worker serve.
+// Editas aqui diretamente; não há passo de build.
+export const PAGE = `<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Desbloquear · __TITLE__</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B0C10">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --night:#0B0C10; --card:#15171D; --card2:#1B1E26; --line:#282C36;
+  --ink:#EDEFF3; --mute:#868FA0; --brass:#C9A227; --go:#4CAF7D; --stop:#D9534F;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  --sans:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--night)}
+body{color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;min-height:100dvh;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+h1,h2{margin:0;font-weight:800;letter-spacing:-.02em}
+button,input{font-family:inherit;font-size:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.shell{width:100%;max-width:440px;margin:0 auto;padding:28px 20px 40px;flex:1;display:flex;flex-direction:column}
+
+/* topo */
+.brand{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:var(--mute);text-transform:uppercase;margin-bottom:26px}
+.brand b{color:var(--brass);font-weight:400}
+
+/* capa / hero */
+.hero{margin-bottom:26px}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--brass);text-transform:uppercase;margin-bottom:9px}
+.hero h1{font-size:30px;line-height:1.08;text-transform:uppercase;margin-bottom:7px}
+.hero .art{font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--mute);text-transform:uppercase}
+
+/* painel */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:3px;padding:22px 20px}
+.panel h2{font-size:15px;margin-bottom:5px}
+.panel p.lead{color:var(--mute);font-size:13.5px;margin:0 0 20px}
+
+/* entrada do código */
+.codebox{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.pfx{font-family:var(--mono);font-weight:700;font-size:19px;color:var(--brass);letter-spacing:.04em;flex:none}
+.seg{flex:1;min-width:0;background:var(--night);border:1px solid var(--line);border-radius:2px;
+  font-family:var(--mono);font-weight:700;font-size:19px;text-align:center;letter-spacing:.09em;
+  padding:13px 2px;text-transform:uppercase;transition:border-color .15s,background .15s}
+.seg::placeholder{color:#39404D;font-weight:400}
+.seg:focus{border-color:var(--brass);background:#101218}
+.seg.full{border-color:#3A424F}
+.codebox.ok .seg{border-color:var(--go)}
+.codebox.bad .seg{border-color:var(--stop)}
+.codebox.shake{animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.help{font-family:var(--mono);font-size:11px;color:var(--mute);min-height:18px;letter-spacing:.03em}
+.help.ok{color:var(--go)} .help.bad{color:var(--stop)}
+
+.go{width:100%;margin-top:18px;padding:15px;border:0;border-radius:2px;background:var(--brass);color:#161200;
+  font-weight:800;font-size:15px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:opacity .15s,background .15s}
+.go:hover:not(:disabled){background:#DDB92F}
+.go:disabled{background:var(--card2);color:#4E5566;cursor:not-allowed;box-shadow:inset 0 0 0 1px var(--line)}
+.go.busy{color:transparent;position:relative}
+.go.busy::after{content:'';position:absolute;inset:0;margin:auto;width:18px;height:18px;border:2px solid rgba(22,18,0,.3);
+  border-top-color:#161200;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.note{margin-top:16px;padding-top:15px;border-top:1px solid var(--line);font-size:12px;color:var(--mute);line-height:1.5}
+
+/* mensagens */
+.msg{border-radius:2px;padding:13px 15px;font-size:13.5px;margin-top:16px;display:none;line-height:1.5}
+.msg.on{display:block}
+.msg.err{background:rgba(217,83,79,.09);border-left:3px solid var(--stop)}
+.msg.err b{color:var(--stop)}
+.msg.warn{background:rgba(201,162,39,.08);border-left:3px solid var(--brass)}
+.msg.warn b{color:var(--brass)}
+
+/* sucesso */
+#done{display:none}
+#done.on{display:block}
+.stamp{text-align:center;padding:8px 0 26px}
+.stampmark{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  width:112px;height:112px;border:2.5px solid var(--go);border-radius:50%;color:var(--go);
+  transform:rotate(-11deg);animation:hit .45s cubic-bezier(.2,1.5,.4,1)}
+@keyframes hit{0%{transform:rotate(-11deg) scale(2.4);opacity:0}60%{opacity:1}100%{transform:rotate(-11deg) scale(1);opacity:1}}
+.stampmark b{font-size:15px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
+.stampmark span{font-family:var(--mono);font-size:8.5px;letter-spacing:.13em}
+.stamptext{margin-top:16px;font-size:13px;color:var(--mute);font-family:var(--mono);letter-spacing:.05em}
+
+.sect{margin-bottom:26px}
+.sect > h2{font-size:11px;text-transform:uppercase;letter-spacing:.17em;color:var(--mute);font-weight:600;margin-bottom:12px}
+.links{display:flex;flex-direction:column;gap:9px}
+.lk{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);
+  border-radius:2px;padding:14px 16px;text-decoration:none;color:var(--ink);transition:border-color .15s,background .15s}
+.lk:hover{border-color:#3D4653;background:var(--card2)}
+.lk .ic{width:26px;height:26px;flex:none;display:grid;place-items:center;font-family:var(--mono);font-size:11px;
+  font-weight:700;border:1px solid var(--line);border-radius:50%;color:var(--brass)}
+.lk .tx{flex:1;min-width:0}
+.lk .tx b{display:block;font-size:14px;font-weight:600}
+.lk .tx span{font-size:11.5px;color:var(--mute)}
+.lk .ar{color:var(--mute);font-size:17px}
+
+.dlnote{font-size:11.5px;color:var(--mute);margin-top:10px;font-family:var(--mono);letter-spacing:.03em}
+
+/* rodapé */
+footer{text-align:center;padding:26px 20px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+  color:#4C5462;text-transform:uppercase}
+
+/* aviso de modo demo */
+.demo{background:var(--brass);color:#161200;text-align:center;padding:7px 14px;font-family:var(--mono);
+  font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700}
+.demo input{background:rgba(0,0,0,.16);border:0;border-radius:2px;padding:3px 6px;font-size:10px;
+  width:190px;margin-left:7px;font-family:var(--mono)}
+</style>
+
+<div class="demo" id="demoBar" hidden>
+  Modo demonstração — sem servidor
+  <input id="demoSecret" placeholder="cola aqui o segredo do cofre" spellcheck="false">
+</div>
+
+<div class="shell">
+  <div class="brand">__BRAND__ <b>/</b> Acesso digital</div>
+
+  <div class="hero">
+    <div class="eyebrow">__EYEBROW__</div>
+    <h1>__TITLE__</h1>
+    <div class="art">__ARTIST__</div>
+  </div>
+
+  <!-- ENTRADA -->
+  <div id="entry">
+    <div class="panel">
+      <h2>Introduz o código do teu CD</h2>
+      <p class="lead">Está no cartão selado dentro da caixa. Só funciona uma vez.</p>
+
+      <div class="codebox" id="cbox">
+        <span class="pfx" id="pfx">__PREFIX__</span>
+        <input class="seg" id="s1" maxlength="4" placeholder="––––" inputmode="text" autocomplete="off"
+               autocapitalize="characters" spellcheck="false" aria-label="Primeiro bloco do código">
+        <input class="seg" id="s2" maxlength="4" placeholder="––––" inputmode="text" autocomplete="off"
+               autocapitalize="characters" spellcheck="false" aria-label="Segundo bloco do código">
+        <input class="seg" id="s3" maxlength="4" placeholder="––––" inputmode="text" autocomplete="off"
+               autocapitalize="characters" spellcheck="false" aria-label="Terceiro bloco do código">
+      </div>
+      <div class="help" id="help" role="status" aria-live="polite"></div>
+
+      <button class="go" id="btn" disabled>Desbloquear</button>
+
+      <div class="msg" id="msg" role="alert"></div>
+
+      <p class="note">O código tem 12 caracteres. Podes colar tudo de uma vez.
+        Se leste um <b>O</b> ou um <b>I</b>, escreve <b>0</b> e <b>1</b> — corrigimos automaticamente.</p>
+    </div>
+  </div>
+
+  <!-- SUCESSO -->
+  <div id="done">
+    <div class="stamp">
+      <div class="stampmark"><b>Validado</b><span id="stampSer">N.º ————</span></div>
+      <div class="stamptext" id="doneAt"></div>
+    </div>
+
+    <div class="sect" id="secStream" hidden>
+      <h2>Ouvir agora</h2>
+      <div class="links" id="lkStream"></div>
+    </div>
+
+    <div class="sect" id="secExtra" hidden>
+      <h2>Só para quem tem o CD</h2>
+      <div class="links" id="lkExtra"></div>
+      <p class="dlnote" id="dlnote"></p>
+    </div>
+  </div>
+</div>
+
+<footer>__FOOTER__</footer>
+
+<script>
+/* A página é servida pelo próprio Worker: a API está na mesma origem.
+   Aberta como ficheiro local, entra em modo demonstração. */
+var ALBUM  = '__SLUG__';
+var PREFIX = '__PREFIX__';
+var DEMO   = location.protocol === 'file:';
+
+var A32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+function $(s){ return document.querySelector(s); }
+if (DEMO) $('#demoBar').hidden = false;
+
+/* armazenamento tolerante: se o browser bloquear, funciona só nesta sessão */
+var store = (function(){
+  var mem = {};
+  try {
+    localStorage.setItem('__probe','1'); localStorage.removeItem('__probe');
+    return { get: function(k){ return localStorage.getItem(k); },
+             set: function(k,v){ localStorage.setItem(k,v); } };
+  } catch(e){
+    return { get: function(k){ return mem[k] == null ? null : mem[k]; },
+             set: function(k,v){ mem[k] = v; } };
+  }
+})();
+
+function clean(s){
+  return String(s).toUpperCase().replace(/[^0-9A-Z]/g,'')
+    .replace(/O/g,'0').replace(/[IL]/g,'1').replace(/U/g,'V');
+}
+
+var segs = [$('#s1'), $('#s2'), $('#s3')];
+function body(){ return segs.map(function(s){ return s.value; }).join(''); }
+
+function paint(){
+  var v = body();
+  segs.forEach(function(s){ s.classList.toggle('full', s.value.length === 4); });
+  $('#btn').disabled = v.length !== 12;
+  var h = $('#help');
+  if (v.length === 0)     { h.textContent = ''; h.className = 'help'; }
+  else if (v.length < 12) { h.textContent = (12 - v.length) + ' caracteres em falta'; h.className = 'help'; }
+  else                    { h.textContent = 'Código completo'; h.className = 'help ok'; }
+  $('#cbox').classList.remove('bad');
+}
+
+segs.forEach(function(s, i){
+  s.addEventListener('input', function(){
+    var before = s.value;
+    s.value = clean(before).slice(0,4);
+    if (s.value.length === 4 && i < 2 && before.length >= 4) segs[i+1].focus();
+    paint(); hide();
+  });
+  s.addEventListener('keydown', function(e){
+    if (e.key === 'Backspace' && !s.value && i > 0){ segs[i-1].focus(); segs[i-1].setSelectionRange(4,4); }
+    if (e.key === 'Enter' && !$('#btn').disabled) submit();
+  });
+  s.addEventListener('paste', function(e){
+    e.preventDefault();
+    var t = clean(e.clipboardData.getData('text'));
+    if (t.indexOf(PREFIX) === 0) t = t.slice(PREFIX.length);
+    t = t.slice(0,12);
+    segs.forEach(function(x,k){ x.value = t.slice(k*4, k*4+4); });
+    paint(); hide();
+    var target = segs[Math.min(2, Math.max(0, Math.floor((t.length-1)/4)))];
+    if (target) target.focus();
+  });
+});
+
+function hide(){ $('#msg').className = 'msg'; }
+function say(kind, html){ var m = $('#msg'); m.className = 'msg on ' + kind; m.innerHTML = html; }
+function reject(html){
+  say('err', html);
+  $('#cbox').classList.add('bad','shake');
+  setTimeout(function(){ $('#cbox').classList.remove('shake'); }, 320);
+}
+
+$('#btn').addEventListener('click', submit);
+
+function submit(){
+  var code = PREFIX + body();
+  var btn = $('#btn');
+  btn.disabled = true; btn.classList.add('busy'); hide();
+  (DEMO ? demoRedeem(code) : apiRedeem(code))
+    .then(function(r){
+      if (r.ok){ if (r.token) store.set('bf:' + ALBUM, r.token); reveal(r); }
+      else reject(errText(r));
+    })
+    .catch(function(){
+      say('warn','<b>Sem ligação.</b> Verifica a internet e tenta outra vez. O teu código continua válido.');
+    })
+    .then(function(){
+      btn.classList.remove('busy');
+      btn.disabled = body().length !== 12;
+    });
+}
+
+function errText(r){
+  if (r.error === 'invalid')  return '<b>Código inválido.</b> Confere caractere a caractere — é fácil trocar um 5 por um S.';
+  if (r.error === 'redeemed') return '<b>Este código já foi usado</b>' + (r.at ? ' em ' + fmtDate(r.at) : '') +
+    '.<br>Se foste tu e perdeste o acesso, escreve-nos com o número de série do cartão.';
+  if (r.error === 'rate')     return '<b>Demasiadas tentativas.</b> Espera um minuto antes de tentar de novo.';
+  if (r.error === 'blocked')  return '<b>Código suspenso.</b> Contacta-nos com o número de série do cartão.';
+  return '<b>Não foi possível validar.</b> Tenta daqui a pouco.';
+}
+function fmtDate(iso){
+  try { return new Date(iso).toLocaleDateString('pt-PT',{day:'2-digit',month:'long',year:'numeric'}); }
+  catch(e){ return ''; }
+}
+
+function apiRedeem(code){
+  return fetch('/api/redeem', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ code: code, album: ALBUM, device: deviceId() })
+  }).then(function(res){
+    if (res.status === 429) return { ok:false, error:'rate' };
+    return res.json();
+  });
+}
+function deviceId(){
+  var d = store.get('bf:dev');
+  if (!d){
+    var a = crypto.getRandomValues(new Uint8Array(16));
+    d = Array.prototype.map.call(a, function(b){ return ('0'+b.toString(16)).slice(-2); }).join('');
+    store.set('bf:dev', d);
+  }
+  return d;
+}
+
+/* modo demonstração: valida o checksum no browser, não guarda nada */
+var usedInDemo = {};
+function demoRedeem(code){
+  var sec = $('#demoSecret').value.trim().toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(sec)) return Promise.resolve({ ok:false, error:'invalid' });
+  var n = clean(code);
+  var pay = n.slice(PREFIX.length, PREFIX.length + 8), chk = n.slice(PREFIX.length + 8);
+  var raw = new Uint8Array(sec.match(/../g).map(function(h){ return parseInt(h,16); }));
+  return crypto.subtle.importKey('raw', raw, {name:'HMAC',hash:'SHA-256'}, false, ['sign'])
+    .then(function(k){ return crypto.subtle.sign('HMAC', k, new TextEncoder().encode(PREFIX + '|C|' + pay)); })
+    .then(function(sig){
+      var bytes = new Uint8Array(sig), bits = 0, val = 0, out = '';
+      for (var i = 0; i < bytes.length && out.length < 4; i++){
+        val = (val << 8) | bytes[i]; bits += 8;
+        while (bits >= 5 && out.length < 4){ out += A32[(val >> (bits-5)) & 31]; bits -= 5; }
+      }
+      if (out !== chk) return { ok:false, error:'invalid' };
+      if (usedInDemo[n]) return { ok:false, error:'redeemed', at:new Date().toISOString() };
+      usedInDemo[n] = 1;
+      return { ok:true, serial:'demo', redeemed_at:new Date().toISOString(),
+        stream:[{name:'Spotify',url:'https://open.spotify.com',note:'Álbum completo'},
+                {name:'Apple Music',url:'https://music.apple.com',note:'Álbum completo'},
+                {name:'YouTube Music',url:'https://music.youtube.com',note:'Álbum completo'}],
+        extra:[{name:'Faixa inédita (WAV)',url:'#',note:'Só nesta edição'}],
+        expires_in:900 };
+    });
+}
+
+function reveal(r){
+  $('#entry').style.display = 'none';
+  $('#done').classList.add('on');
+  if (r.serial) $('#stampSer').textContent = 'N.º ' + r.serial;
+  $('#doneAt').textContent = r.redeemed_at ? 'Validado a ' + fmtDate(r.redeemed_at) : '';
+  fillLinks('#secStream', '#lkStream', r.stream);
+  fillLinks('#secExtra', '#lkExtra', r.extra);
+  if (r.extra && r.extra.length && r.expires_in)
+    $('#dlnote').textContent = 'Os links de transferência expiram em ' +
+      Math.round(r.expires_in / 60) + ' minutos. Recarrega a página para renovar.';
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+function fillLinks(sec, host, list){
+  if (!list || !list.length) return;
+  $(sec).hidden = false;
+  $(host).innerHTML = list.map(function(l){
+    return '<a class="lk" href="' + esc(l.url) + '" target="_blank" rel="noopener">' +
+      '<span class="ic">' + esc(String(l.name || '?').slice(0,1)) + '</span>' +
+      '<span class="tx"><b>' + esc(l.name) + '</b><span>' + esc(l.note || '') + '</span></span>' +
+      '<span class="ar" aria-hidden="true">&#8599;</span></a>';
+  }).join('');
+}
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+/* já desbloqueado neste aparelho? volta a entrar sem gastar nada */
+(function(){
+  var t = store.get('bf:' + ALBUM);
+  if (!t || DEMO) return;
+  fetch('/api/session', { headers:{ Authorization:'Bearer ' + t } })
+    .then(function(res){ return res.ok ? res.json() : null; })
+    .then(function(r){ if (r && r.ok) reveal(r); })
+    .catch(function(){});
+})();
+
+/* código no link: ?c=GA7K2M9QX4P3TZ */
+(function(){
+  var c = new URLSearchParams(location.search).get('c');
+  if (!c) return;
+  var t = clean(c);
+  if (t.indexOf(PREFIX) === 0) t = t.slice(PREFIX.length);
+  segs.forEach(function(x,k){ x.value = t.slice(k*4, k*4+4); });
+  paint();
+  history.replaceState(null, '', location.pathname);
+})();
+
+paint();
+
+</script>
+</html>
+`;

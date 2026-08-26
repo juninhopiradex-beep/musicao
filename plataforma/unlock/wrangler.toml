@@ -1,0 +1,13 @@
+name = "beatfreak-unlock"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "beatfreak-unlock"
+database_id = "COLA-AQUI-O-ID"
+
+# Só se usares ficheiros exclusivos
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "beatfreak-media"

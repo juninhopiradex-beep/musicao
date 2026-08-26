@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="pt">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VMusicao</title>
+<style>
+:root{
+  --bg:#0B0B0F; --surface:#14141C; --surface2:#1C1C27; --line:#26262f;
+  --red:#E0122C; --gold:#F2B01E; --text:#F5F2EC; --muted:#8f8f9e; --ok:#3ddc84;
+  --mono:ui-monospace,'SF Mono',Menlo,monospace;
+  --sans:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.5}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.topo{border-bottom:1px solid var(--line);padding:16px 26px;display:flex;align-items:center;gap:14px}
+.logo{display:flex;align-items:center;gap:11px}
+.logo .m{width:34px;height:34px;border-radius:9px;background:var(--red);display:grid;place-items:center;font-weight:800;font-size:17px}
+.logo b{font-size:18px;font-weight:800;letter-spacing:-.01em}
+.logo b i{color:var(--red);font-style:normal}
+.motor{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--muted);text-align:right}
+.motor .lic{color:var(--gold)}
+
+.wrap{max-width:1240px;margin:0 auto;padding:26px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+
+h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:11px}
+.painel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+label{display:block;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-weight:600}
+input[type=text],input[type=number],select,textarea{
+  width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:11px 13px}
+textarea{resize:vertical;font-family:var(--mono);font-size:13px;line-height:1.6}
+.campo{margin-bottom:14px}
+.linha{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:620px){.linha{grid-template-columns:1fr}}
+
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.chip{background:var(--surface2);border:1px solid var(--line);color:var(--muted);border-radius:99px;
+  padding:7px 14px;font-size:12.5px;cursor:pointer;transition:.15s}
+.chip:hover{color:var(--text);border-color:#3a3a48}
+.chip.on{background:var(--gold);border-color:var(--gold);color:#1a1200;font-weight:700}
+
+.gerar{width:100%;background:var(--red);border:0;border-radius:11px;padding:15px;
+  font-size:15px;font-weight:800;letter-spacing:.05em;cursor:pointer;margin-top:6px;transition:.15s}
+.gerar:hover:not(:disabled){background:#F42A44}
+.gerar:disabled{background:var(--surface2);color:#4E5566;cursor:not-allowed}
+
+.prog{margin-top:16px;display:none}
+.prog.on{display:block}
+.pb{height:7px;background:var(--surface2);border-radius:99px;overflow:hidden}
+.pb i{display:block;height:100%;background:linear-gradient(90deg,var(--red),var(--gold));
+  border-radius:99px;transition:width .35s;width:0}
+.pl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;
+  color:var(--muted);margin-top:8px}
+
+.aviso{margin-top:14px;padding:11px 14px;border-radius:9px;font-size:13px;line-height:1.5;
+  background:var(--surface2);border-left:3px solid var(--gold);color:var(--muted)}
+.aviso.erro{border-left-color:var(--red)}
+.aviso b{color:var(--text)}
+
+.saida{margin-top:26px}
+.cands{display:grid;grid-template-columns:repeat(auto-fit,minmax(276px,1fr));gap:14px}
+.c{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.c.on{border-color:var(--gold);box-shadow:0 0 0 1px rgba(242,176,30,.22)}
+.ch{display:flex;align-items:center;gap:9px;margin-bottom:13px}
+.ch b{font-size:15px;font-weight:700}
+.tag{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+  background:rgba(242,176,30,.12);color:var(--gold);border:1px solid rgba(242,176,30,.35);
+  padding:3px 7px;border-radius:5px}
+.pts{margin-left:auto;font-family:var(--mono);font-size:25px;font-weight:700}
+audio{width:100%;margin-bottom:12px;height:36px}
+.eixos{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.e{display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--muted)}
+.e>span:first-child{width:62px;flex:none}
+.bar{flex:1;height:6px;background:var(--surface2);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px}
+.e b{width:24px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--text)}
+.med{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.med span{font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--surface2);
+  border:1px solid var(--line);border-radius:5px;padding:3px 7px}
+.prob{display:flex;flex-direction:column;gap:4px}
+.prob span{font-size:11.5px;color:var(--red);line-height:1.4}
+.limpo{font-size:11.5px;color:var(--ok)}
+
+.lado .painel{margin-bottom:16px}
+.lado pre{margin:0;font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text);
+  white-space:pre-wrap;word-break:break-word;max-height:300px;overflow:auto}
+.hist{display:flex;flex-direction:column;gap:7px}
+.hi{display:flex;align-items:center;gap:9px;background:var(--surface2);border:1px solid var(--line);
+  border-radius:8px;padding:9px 11px;font-size:12.5px;cursor:pointer}
+.hi:hover{border-color:#3a3a48}
+.hi .pt{width:7px;height:7px;border-radius:50%;flex:none}
+.hi .tt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hi .st{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.vazio{color:var(--muted);font-size:13px;text-align:center;padding:22px}
+</style>
+
+<div class="topo">
+  <div class="logo"><span class="m">V</span><b>VMUSIC<i>AO</i></b></div>
+  <div class="motor" id="motor">a ligar…</div>
+</div>
+
+<div class="wrap">
+  <div class="grid">
+    <div>
+      <div class="painel">
+        <div class="campo">
+          <label for="texto">Descreve a música</label>
+          <input type="text" id="texto" value="Kizomba romântica, 90 BPM, voz masculina, em Si menor"
+                 placeholder="ex.: Afro House emotivo, 122 BPM, voz masculina angolana">
+        </div>
+        <div class="chips" id="generos"></div>
+
+        <div class="linha">
+          <div class="campo"><label for="titulo">Título</label>
+            <input type="text" id="titulo" placeholder="opcional"></div>
+          <div class="campo"><label for="dur">Duração (s)</label>
+            <input type="number" id="dur" value="120" min="20" max="600"></div>
+        </div>
+        <div class="linha">
+          <div class="campo"><label for="estrutura">Estrutura</label>
+            <select id="estrutura">
+              <option value="classica">Clássica</option>
+              <option value="viral">Viral — refrão à frente</option>
+              <option value="curta">Curta</option>
+              <option value="pista">Pista</option>
+            </select></div>
+          <div class="campo"><label for="n">Candidatos a gerar</label>
+            <select id="n"><option>2</option><option selected>4</option><option>6</option><option>8</option></select></div>
+        </div>
+        <div class="campo">
+          <label for="letra">Letra (vazio = o motor inventa)</label>
+          <textarea id="letra" rows="5" placeholder="[Verse 1]&#10;..."></textarea>
+        </div>
+
+        <button class="gerar" id="btn">✦ Gerar</button>
+
+        <div class="prog" id="prog">
+          <div class="pb"><i id="pbi"></i></div>
+          <div class="pl"><span id="fase">na fila</span><span id="pct">0%</span></div>
+        </div>
+        <div id="avisos"></div>
+      </div>
+
+      <div class="saida" id="saida"></div>
+    </div>
+
+    <div class="lado">
+      <div class="painel">
+        <h2>Prompt compilado</h2>
+        <pre id="prompt">—</pre>
+      </div>
+      <div class="painel">
+        <h2>Últimas gerações</h2>
+        <div class="hist" id="hist"><div class="vazio">nada ainda</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var $ = function(s){ return document.querySelector(s); };
+var GEN = [], sondagem = null;
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; });
+}
+function cor(p){ return p >= 75 ? 'var(--ok)' : p >= 55 ? 'var(--gold)' : 'var(--red)'; }
+
+/* ── arranque ─────────────────────────────────────── */
+fetch('/api/generos').then(function(r){ return r.json(); }).then(function(d){
+  GEN = d.generos;
+  $('#generos').innerHTML = GEN.map(function(g){
+    return '<button class="chip" data-g="' + g.id + '">' + esc(g.id) +
+      ' <span style="opacity:.6">' + g.bpm[0] + '–' + g.bpm[1] + '</span></button>';
+  }).join('');
+  document.querySelectorAll('[data-g]').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('[data-g]').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      var g = GEN.filter(function(x){ return x.id === b.dataset.g; })[0];
+      var bpm = Math.round((g.bpm[0] + g.bpm[1]) / 2);
+      $('#texto').value = b.dataset.g + ', ' + bpm + ' BPM, voz masculina';
+    });
+  });
+  var m = d.motor;
+  $('#motor').innerHTML = 'motor <b>' + esc(m.nome) + '</b> · ' + esc(m.modelo || '—') +
+    (m.licenca ? '<br><span class="lic">' + esc(m.licenca) +
+      (m.licenca_verificada ? '' : ' · POR VERIFICAR') + '</span>' : '');
+});
+
+historico();
+
+/* ── gerar ────────────────────────────────────────── */
+$('#btn').addEventListener('click', function(){
+  var corpo = {
+    texto: $('#texto').value.trim(),
+    titulo: $('#titulo').value.trim(),
+    letra: $('#letra').value,
+    duracao_s: parseInt($('#dur').value, 10) || 120,
+    estrutura: $('#estrutura').value,
+    candidatos: parseInt($('#n').value, 10) || 4,
+  };
+  if(!corpo.texto){ mostrarAviso('Descreve a música primeiro.', true); return; }
+
+  $('#btn').disabled = true;
+  $('#btn').textContent = 'a gerar…';
+  $('#prog').classList.add('on');
+  $('#avisos').innerHTML = '';
+  $('#saida').innerHTML = '';
+
+  fetch('/api/gerar', { method:'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify(corpo) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.erro) throw new Error(d.erro);
+      acompanhar(d.id);
+    })
+    .catch(function(e){ terminar(); mostrarAviso('Não foi possível começar: ' + e.message, true); });
+});
+
+function acompanhar(id){
+  clearInterval(sondagem);
+  sondagem = setInterval(function(){
+    fetch('/api/estado/' + id).then(function(r){ return r.json(); }).then(function(t){
+      $('#pbi').style.width = (t.pct || 0) + '%';
+      $('#pct').textContent = (t.pct || 0) + '%';
+      $('#fase').textContent = t.detalhe ? t.estado + ' · ' + t.detalhe : t.estado;
+      if(t.estado === 'pronto'){ clearInterval(sondagem); terminar(); render(t.resultado); historico(); }
+      if(t.estado === 'erro'){ clearInterval(sondagem); terminar();
+        mostrarAviso('<b>Falhou.</b> ' + esc(t.erro), true); historico(); }
+    }).catch(function(){});
+  }, 600);
+}
+
+function terminar(){
+  $('#btn').disabled = false;
+  $('#btn').textContent = '✦ Gerar';
+  setTimeout(function(){ $('#prog').classList.remove('on'); }, 900);
+}
+
+function mostrarAviso(html, erro){
+  $('#avisos').innerHTML = '<div class="aviso' + (erro ? ' erro' : '') + '">' + html + '</div>';
+}
+
+/* ── resultado ────────────────────────────────────── */
+var EIXOS = [['tecnica','Técnica'],['dinamica','Dinâmica'],['estereo','Estéreo'],
+             ['espectro','Espectro'],['estrutura','Estrutura']];
+
+function render(r){
+  $('#prompt').textContent = r.prompt;
+
+  if(r.avisos && r.avisos.length){
+    mostrarAviso('<b>Antes de tudo:</b><br>' + r.avisos.map(esc).join('<br>'));
+  }
+
+  var res = r.resumo;
+  var html = '<h2>Resultado · ' + res.gerados + ' candidatos · ' +
+    res.acima_do_minimo + ' acima da barreira · ' + res.segundos_gpu + 's</h2>';
+  if(res.aviso) html += '<div class="aviso">' + esc(res.aviso) + '</div>';
+
+  html += '<div class="cands">' + r.candidatos.map(function(c, i){
+    if(c.erro) return '<div class="c"><div class="ch"><b>Candidato ' + (i+1) +
+      '</b></div><div class="prob"><span>⚠ ' + esc(c.erro) + '</span></div></div>';
+    var m = c.medidas || {};
+    return '<div class="c' + (c.escolhido ? ' on' : '') + '">' +
+      '<div class="ch"><b>' + (c.escolhido ? (i === 0 ? 'Versão A' : 'Versão B')
+                                           : 'Candidato ' + (i+1)) + '</b>' +
+        (c.escolhido ? '<span class="tag">escolhido</span>' : '') +
+        '<span class="pts" style="color:' + cor(c.pontuacao) + '">' + c.pontuacao + '</span></div>' +
+      (c.audio ? '<audio controls preload="none" src="' + c.audio + '"></audio>' : '') +
+      '<div class="eixos">' + EIXOS.map(function(e){
+        var v = (c.eixos || {})[e[0]] || 0;
+        return '<div class="e"><span>' + e[1] + '</span><span class="bar">' +
+          '<i style="width:' + v + '%;background:' + cor(v) + '"></i></span><b>' + v + '</b></div>';
+      }).join('') + '</div>' +
+      '<div class="med">' +
+        '<span>' + m.lufs_i + ' LUFS</span><span>' + m.true_peak_db + ' dBTP</span>' +
+        '<span>' + m.lra_lu + ' LU</span><span>corr ' + m.correlacao + '</span>' +
+        '<span>' + m.bpm_estimado + ' BPM</span><span>' + m.duracao_s + 's</span>' +
+      '</div>' +
+      (c.problemas && c.problemas.length
+        ? '<div class="prob">' + c.problemas.map(function(p){
+            return '<span>⚠ ' + esc(p) + '</span>'; }).join('') + '</div>'
+        : '<div class="limpo">✓ sem problemas detetados</div>') +
+    '</div>';
+  }).join('') + '</div>';
+
+  if(!r.motor.licenca_verificada && r.motor.nome !== 'simulado'){
+    html += '<div class="aviso"><b>Licença por verificar.</b> ' + esc(r.motor.licenca) +
+      ' — confirma na página oficial do modelo antes de usar comercialmente.</div>';
+  }
+  if(r.motor.nome === 'simulado'){
+    html += '<div class="aviso"><b>Motor simulado.</b> Isto é áudio sintético, não música. ' +
+      'Serve para veres a cadeia a funcionar. Liga o ACE-Step com ' +
+      '<code>--motor acestep</code> quando tiveres GPU.</div>';
+  }
+  $('#saida').innerHTML = html;
+}
+
+/* ── histórico ────────────────────────────────────── */
+function historico(){
+  fetch('/api/trabalhos').then(function(r){ return r.json(); }).then(function(l){
+    if(!l.length){ $('#hist').innerHTML = '<div class="vazio">nada ainda</div>'; return; }
+    $('#hist').innerHTML = l.map(function(t){
+      var c = t.estado === 'pronto' ? 'var(--ok)' : t.estado === 'erro' ? 'var(--red)' : 'var(--gold)';
+      return '<div class="hi" data-id="' + t.id + '"><span class="pt" style="background:' + c + '"></span>' +
+        '<span class="tt">' + esc(t.titulo || 'sem título') + '</span>' +
+        '<span class="st">' + esc(t.estado) + '</span></div>';
+    }).join('');
+    document.querySelectorAll('[data-id]').forEach(function(b){
+      b.addEventListener('click', function(){
+        fetch('/api/estado/' + b.dataset.id).then(function(r){ return r.json(); }).then(function(t){
+          if(t.resultado) render(t.resultado);
+        });
+      });
+    });
+  }).catch(function(){});
+}
+</script>
+</html>

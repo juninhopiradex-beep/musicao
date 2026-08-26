@@ -1,0 +1,72 @@
+/* ============================================================
+   MUSIC AO · MONITORIZAÇÃO DE RÁDIO
+   ============================================================ */
+.rd-filtros{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:22px}
+.rd-chip{
+  background:var(--surface);border:1px solid var(--line);color:var(--muted);
+  border-radius:99px;padding:8px 16px;font-size:13px;font-family:inherit;
+  cursor:pointer;transition:border-color .15s,color .15s,background .15s;
+}
+.rd-chip:hover{color:var(--text);border-color:#3a3a48}
+.rd-chip em{font-style:normal;font-family:ui-monospace,Menlo,monospace;font-size:11px;opacity:.7;margin-left:4px}
+.rd-chip.on{background:var(--gold);border-color:var(--gold);color:#1a1200;font-weight:600}
+.rd-chip.on em{opacity:.75}
+
+.rd-cols{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.rd-cols .section{margin-bottom:0}
+@media(max-width:900px){.rd-cols{grid-template-columns:1fr}}
+
+.rd-rk{display:flex;align-items:center;gap:14px;padding:9px 0}
+.rd-rk + .rd-rk{border-top:1px solid var(--line)}
+.rd-nome{flex:1;min-width:0;font-size:14px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis}
+.rd-nome em{
+  display:block;font-style:normal;font-size:11px;color:var(--muted);
+  font-weight:400;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.rd-bar{width:110px;flex:none;height:9px;background:var(--surface2);border-radius:99px;overflow:hidden}
+.rd-bar span{display:block;height:100%;background:var(--gold);border-radius:99px}
+.rd-bar span.alt{background:var(--red)}
+.rd-n{
+  width:40px;flex:none;text-align:right;font-family:ui-monospace,Menlo,monospace;
+  font-size:15px;font-weight:700;color:var(--gold);
+}
+.rd-n.alt{color:var(--red)}
+
+/* mapa de calor */
+.rd-heat{
+  display:grid;grid-template-columns:38px repeat(24,1fr);
+  gap:3px;align-items:center;
+}
+.rd-heat-lbl{
+  font-size:11px;color:var(--muted);font-weight:600;text-align:right;padding-right:6px;
+}
+.rd-heat-h{font-family:ui-monospace,Menlo,monospace;font-size:9.5px;color:var(--muted);text-align:center}
+.rd-cel{
+  aspect-ratio:1;border-radius:2px;background:var(--gold);
+  min-height:14px;transition:transform .12s;
+}
+.rd-cel:hover{transform:scale(1.35)}
+
+/* tabela */
+.rd-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.rd-tbl th{
+  text-align:left;padding:12px 16px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);
+}
+.rd-tbl td{padding:11px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+.rd-tbl tr:last-child td{border-bottom:0}
+.rd-t{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--muted);white-space:nowrap}
+.rd-reg{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:2px}
+.rd-conf{
+  font-family:ui-monospace,Menlo,monospace;font-size:12px;font-weight:700;
+  padding:2px 8px;border-radius:99px;
+}
+.rd-conf.alta{background:rgba(61,220,132,.14);color:var(--ok)}
+.rd-conf.media{background:rgba(242,176,30,.14);color:var(--gold)}
+.rd-conf.baixa{background:rgba(143,143,158,.14);color:var(--muted)}
+
+.rd-aviso{
+  margin-top:24px;padding:14px 18px;border-radius:10px;font-size:13px;line-height:1.55;
+  background:var(--surface2);border-left:3px solid var(--gold);color:var(--muted);
+}
+.rd-aviso b{color:var(--text)}
