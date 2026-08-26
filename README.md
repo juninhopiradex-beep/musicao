@@ -1,130 +1,118 @@
-# Music AO — Protótipo Funcional
+# VMusicao
 
-**A tua música, o teu dinheiro.** Protótipo navegável da plataforma angolana de streaming e monetização musical. 100% estático (HTML + CSS + JavaScript vanilla) — corre diretamente no GitHub Pages, sem build step e sem dependências.
+Motor de produção musical assistida por IA. Este pacote contém a parte que
+**funciona hoje, sem GPU**: o blueprint, o compilador de prompt, o controlo
+de qualidade e a seleção best-of-N. Mais a interface para ligar um motor de
+geração quando houver um.
 
-## O que está funcional nesta demo
+## O que está feito e testado
 
-| Área | Funcionalidade |
+| Peça | Estado |
 |---|---|
-| **Player** | Reprodução com áudio generativo (Web Audio) por género/BPM/tom, barra de progresso, fila, equalizador animado |
-| **Modelo A — Carteira** | Recargas de **500 · 1.000 · 2.000 · 5.000 · 10.000 AKZ**, saldo persistente, histórico financeiro com data/hora |
-| **Modelo B — Subscrição** | Plano **Premium 25.000 AKZ/mês** com ativar/cancelar e validade automática; streaming e downloads ilimitados sem descontar saldo (o artista continua a receber) |
-| **Cobrança de streaming** | Débito de **10 Kz** aos 5 s de reprodução (30 s em produção); mensagem oficial de saldo terminado |
-| **Downloads** | Compra a **100 Kz**, licença registada, re-download gratuito |
-| **Portal do artista** | Upload drag & drop, validação simulada, taxa de **1.000 Kz**, fila de moderação, **IBAN obrigatório** no registo |
-| **Contabilidade do artista** | **Contador histórico** (nunca reinicia) + **contador financeiro** (pendente, zera após pagamento) lado a lado no painel |
-| **Gerador de Pagamentos PSX** | Módulo admin: selecionar artistas e período, ver totais, gerar e exportar ficheiro bancário (débito único → múltiplos créditos), com **Reinício Inteligente** e proteção contra pagamento duplicado |
-| **Administração** | KPIs globais, fila de moderação (aprovar/rejeitar), eventos de fraude |
-| **Transparência** | Contador ao vivo de AKZ pagos aos artistas em cada faixa e no hero |
-| **Perfis** | Comutador demo Ouvinte / Artista / Admin na barra lateral |
-| **Selos de CD** | Códigos de acesso para edições físicas: gera chaves únicas por disco, QR da capa, folhas A4 para a gráfica e painel de ativações. **100.000 Kz por álbum** |
+| `motor/blueprint.py` | Blueprint universal + compilador de linguagem natural |
+| `motor/qc.py` | Análise de qualidade — LUFS, true peak, fase, artefactos |
+| `motor/provider.py` | Interface de motores + best-of-N |
+| `testes/` | 50 provas, todas a passar |
 
-Todos os dados são fictícios e o estado (saldo, licenças, subscrição, uploads, perfil de artista) fica guardado no browser (localStorage).
+**O LUFS foi validado contra o `ebur128` do ffmpeg** — a implementação de
+referência da norma ITU-R BS.1770-4. Diferença dentro de **0,05 dB** em
+quatro níveis de sinal distintos.
 
-### Registo de artista (onboarding obrigatório)
+O QC apanha, com defeitos injetados de propósito: clipping, silêncio no
+início, offset DC, fase invertida, canais desequilibrados, excesso de energia
+acima de 10 kHz, NaN, dinâmica esmagada e andamento instável.
 
-Ao entrar no portal do artista pela primeira vez, é obrigatório criar o perfil antes de publicar: **Nome completo, BI e IBAN são obrigatórios**; o BI é validado pelo formato oficial angolano (`^\d{9}[A-Z]{2}\d{3}$`) e o **IBAN é validado com o algoritmo de checksum ISO 7064 MOD-97** (AO + 23 dígitos). É obrigatório carregar uma fotografia. Taxa de inscrição de 10.000 Kz debitada da carteira.
-
-### Privacidade dos valores
-
-Os **valores arrecadados nunca aparecem em páginas abertas** — os perfis públicos mostram apenas seguidores, faixas e plays. Os ganhos são visíveis só no painel privado do artista (Total arrecadado + Valor por receber) e ficam registados na conta de administração com histórico completo.
-
-### Transferência de saldo entre utilizadores
-
-Na carteira, qualquer utilizador com saldo pode **transferir créditos para outro utilizador** (por telefone ou ID), com confirmação e recibo no histórico.
-
-### Instalável como app (PWA) — Android, iOS e tablet
-
-Inclui `manifest.webmanifest` + service worker (`sw.js`), pelo que a plataforma é **instalável no ecrã inicial** de Android, iOS e tablets, com ícone próprio e funcionamento em ecrã cheio. É totalmente responsiva (breakpoints de telemóvel, tablet e desktop).
-
-### Caminho para apps nativas iOS/Android
-
-O protótipo é uma PWA — já instalável hoje. Para publicar nas lojas: (1) empacotar a PWA com **Capacitor** ou **Trusted Web Activity** (Android) para gerar apps nativas rapidamente; ou (2) na versão de produção, reescrever o cliente em **React Native/Expo** partilhando o design system, publicando na App Store e Google Play. O backend e a API (ver `musicao_openapi.yaml`) servem web e nativo sem alterações.
-
-### Regras financeiras implementadas (conforme especificação)
-
-- **Preços:** Play 10 AKZ · Download 100 AKZ · Upload 1.000 AKZ · Registo de artista 10.000 AKZ · Premium 25.000 AKZ/mês
-- **Controlo de saldo:** antes de cada play/download valida saldo; se insuficiente bloqueia com a mensagem *"O seu saldo terminou. Efetue uma nova recarga para continuar a ouvir ou descarregar músicas."*
-- **Dois contadores por artista:** histórico (acumulado desde sempre) e financeiro (apenas o pendente de pagamento)
-- **Ficheiro PSX:** cabeçalho + linha de débito único da conta da plataforma + múltiplas linhas de crédito (IBAN, nome, NIF, valor, descrição, referência, data, moeda, banco, nº interno, estado PAGO), com checksum
-- **Reinício inteligente:** após gerar o PSX, o contador pendente zera e o histórico mantém-se — nunca repete pagamentos
-
-## Rodar no GitHub Pages
+## O programa
 
 ```bash
-# 1. cria o repositório e faz push
-git init
-git add .
-git commit -m "Music AO — protótipo v1"
-git branch -M main
-git remote add origin https://github.com/<o-teu-user>/musicao.git
-git push -u origin main
+python3 servidor.py
 ```
 
-2. No GitHub: **Settings → Pages → Source: Deploy from a branch → Branch: `main` / `(root)` → Save**
-3. Em ~1 minuto fica disponível em `https://<o-teu-user>.github.io/musicao/`
+Abre **http://localhost:7800**. Tem botão Gerar a sério: escreves, carregas,
+aparece a barra de progresso, e no fim os candidatos com áudio para ouvir e
+as pontuações do QC.
 
-O ficheiro `.nojekyll` já está incluído para o Pages servir os assets diretamente.
+Por omissão corre com o motor **simulado**, que produz áudio sintético — não é
+música, serve para veres a cadeia toda a funcionar sem GPU nenhuma.
 
-## Rodar localmente
-
-Basta abrir o `index.html` no browser, ou:
+Quando tiveres a GPU:
 
 ```bash
-npx serve .        # ou: python3 -m http.server 8080
+pip install -e .            # dentro da pasta do ACE-Step-1.5
+python3 servidor.py --motor acestep --qualidade estudio
 ```
 
-## Estrutura
+Qualidades: `rapido` (turbo, 8 passos), `padrao` (base, 30), `estudio` (SFT, 60).
 
+Só usa a biblioteca padrão do Python. Sem Node, sem framework, sem build.
+
+## Correr os testes
+
+```bash
+pip install numpy scipy
+sudo apt install ffmpeg
+
+python3 testes/teste_qc.py
+python3 testes/teste_motor.py
 ```
-index.html          shell da SPA (router por hash)
-css/style.css       design system — preto profundo, vermelho e dourado, Unbounded + Sora
-js/data.js          catálogo demo (artistas, faixas, géneros, séries de receita)
-js/audio.js         motor Web Audio — groove generativo por género/BPM/tom
-js/app.js           router, vistas, player, wallet, upload, dashboards, moderação
-js/qr.js            codificador QR (sem dependências)
-js/selos.js         módulo Selos de CD — geração de códigos, exportações, impressão
-css/selos.css       estilos do módulo Selos de CD
-unlock/             backend de validação (Cloudflare Worker) — deploy à parte
-ferramentas/        gerador de chaves offline, para usar sem a plataforma
+
+Exemplo:
+
+```python
+from motor.blueprint import compilar
+from motor.provider import Simulado, melhores_de
+
+b = compilar('Kizomba romântica, 88 BPM, voz masculina, em Si menor, sem guitarra elétrica')
+print(b.validar())          # avisos, se houver
+
+r = melhores_de(Simulado(), b, n=4, devolver=2)
+for c in r['escolhidos']:
+    print(c.pontuacao, c.passou_barreira, c.caminho)
 ```
 
+Trocar `Simulado()` por `AceStep('estudio')` liga o motor real.
 
-## Selos de CD — acesso digital nas edições físicas
+## O que NÃO está feito
 
-Cada CD vendido leva um cartão selado com um código único. O QR impresso na capa
-abre a página de validação, o comprador escreve o código e o acesso digital abre.
-**Uma vez só** — quem partilhar o código não desbloqueia nada a mais.
+**A geração de áudio.** O `AceStep` foi escrito a partir da documentação
+pública, **sem uma GPU à frente**. Os nomes dos parâmetros do CLI vão precisar
+de afinação na primeira utilização. Está marcado no código.
 
-O artista entra em **Selos de CD** (perfil Artista), cria a edição, e recebe:
+Só existe para verificar: o `Simulado` produz áudio sintético com defeitos
+controlados, para exercitar toda a cadeia sem hardware.
 
-- os códigos únicos, com verificação matemática (HMAC-SHA256, alfabeto Crockford)
-- o QR da capa em SVG
-- folhas A4 com 10 cartões de 90×54 mm, prontas para a gráfica
-- CSV separado para a gráfica (série + código) e para o backend (só hashes SHA-256)
-- painel de ativações e verificador para o apoio ao cliente
+## Licenças — ler antes de faturar
 
-### Duas barreiras
+| Modelo | Pesos | Comercial |
+|---|---|---|
+| **ACE-Step 1.5** | MIT (a confirmar) | Sim — dados de treino licenciados |
+| Stable Audio 3 | Community, Small/Medium | Abaixo de $1M de receita · **não gera vozes** |
+| Eleven Music | Fechado, API | Sim |
+| YuE | Apache 2.0 | Sim, mas pesado |
+| **MusicGen** | **CC-BY-NC 4.0** | **NÃO** |
 
-1. **Checksum HMAC** — um código inventado é rejeitado sem sequer consultar a base
-   de dados. Uma hipótese em 1.048.576.
-2. **`UPDATE ... WHERE status='unused'`** — atómico. Doze pedidos em simultâneo
-   sobre o mesmo código: só um vence.
+O `AceStep.capacidades()` devolve `licenca_verificada: False` de propósito.
+Confirma na página oficial do HuggingFace antes de pôr isto a faturar. Uma
+fonte secundária afirma que os pesos têm licença proprietária da StepFun, o
+que contradiz as fontes oficiais. Não é um detalhe.
 
-### O backend
+## Decisões que valem a pena manter
 
-O protótipo gera os códigos; a validação do comprador corre no Worker em
-`unlock/`, com deploy separado na Cloudflare (instruções em `unlock/README.md`).
-Enquanto não estiver no ar, o botão **Simular ativação** mostra o comportamento
-do painel.
+**Best-of-N.** Gerar quatro e escolher dois melhora a qualidade percebida sem
+trocar de modelo. Não é gerar melhor — é escolher melhor.
 
-O endereço do QR está em `js/selos.js` (`UNLOCK_BASE`). **Muda para o teu domínio
-próprio antes de gerar códigos a sério** — fica impresso para sempre nos discos, e
-com um `workers.dev` ficas preso ao fornecedor.
+**Barreira de qualidade que não esconde tudo.** Se nenhum candidato passar,
+devolve-se o melhor com o aviso. Mostrar nada é pior do que mostrar com a nota.
 
-## Próximos passos (produção)
+**Duas fases.** Gerar em turbo para o utilizador escolher; gastar o modelo
+grande só na versão escolhida. É o que mais poupa em infraestrutura.
 
-Este protótipo implementa a UX descrita no **Music_AO_Blueprint_v1.0.docx**. Para produção: substituir o motor de áudio por HLS assinado (CloudFront), ligar a REST API (`musicao_openapi.yaml`) e a base de dados (`musicao_schema.sql`), e ativar os gateways reais de pagamento (EMIS/Stripe).
+**Blueprint como linguagem interna.** Nenhuma parte da aplicação fala a
+sintaxe de um motor concreto. Trocar de motor é escrever um adaptador.
 
----
-© 2026 Music AO · Protótipo de demonstração · Dados fictícios
+## O que falta decidir, e não se decide em código
+
+O ACE-Step nunca foi testado em kuduro, semba, kizomba e português angolano.
+Nenhum benchmark público cobre isso. Antes de investir numa GPU, aluga uma
+por umas horas e ouve. Se a pronúncia e o ritmo não convencerem, não interessa
+o que dizem os números.
