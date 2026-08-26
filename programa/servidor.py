@@ -177,6 +177,23 @@ class Servico(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def _cors(self):
+        """
+        Permite que o site (musicao no GitHub Pages) fale com este servidor.
+        Os browsers deixam uma página HTTPS chamar localhost — é a exceção
+        que torna isto possível sem certificados nem túneis.
+        """
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Max-Age', '86400')
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self._cors()
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
     def _resposta(self, corpo, tipo='application/json', codigo=200, extra=None):
         if isinstance(corpo, (dict, list)):
             corpo = json.dumps(corpo, ensure_ascii=False).encode()
@@ -186,6 +203,7 @@ class Servico(BaseHTTPRequestHandler):
         self.send_header('Content-Type', tipo)
         self.send_header('Content-Length', str(len(corpo)))
         self.send_header('Cache-Control', 'no-store')
+        self._cors()
         for k, v in (extra or {}).items():
             self.send_header(k, v)
         self.end_headers()
@@ -230,6 +248,7 @@ class Servico(BaseHTTPRequestHandler):
             self.send_header('Content-Type', tipo)
             self.send_header('Content-Length', str(len(dados)))
             self.send_header('Accept-Ranges', 'none')
+            self._cors()
             self.end_headers()
             return self.wfile.write(dados)
 
@@ -281,7 +300,9 @@ def main():
         print(f'  licença .. {c["licenca"]} · verificada: {c["licenca_verificada"]}')
         if not c['licenca_verificada']:
             print(f'             confirma na página oficial antes de faturar.')
-    print(f'\n  →  http://localhost:{a.porta}\n')
+    print(f'\n  →  http://localhost:{a.porta}')
+    print(f'  →  ou usa o site: juninhopiradex-beep.github.io/musicao/#/criar')
+    print(f'     (o botão Gerar liga-se sozinho a este servidor)\n')
 
     ThreadingHTTPServer(('127.0.0.1', a.porta), Servico).serve_forever()
 

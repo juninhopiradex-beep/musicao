@@ -145,6 +145,89 @@
     return out.join('\n').trim();
   }
 
+  /* ============================================================
+     LIGAÇÃO AO MOTOR LOCAL
+     O site é estático — não pode correr um modelo de IA. Mas pode
+     falar com o servidor do VMusicao a correr na máquina de quem
+     está a usar. Os browsers permitem uma página HTTPS chamar
+     localhost; é a exceção que torna isto possível.
+     ============================================================ */
+  var SERVIDOR = 'http://localhost:7800';
+  var motor = { ligado: false, nome: null, modelo: null, licenca: null, verificada: null };
+  var trabalho = null, sonda = null, resultadoVivo = null;
+
+  function procurarMotor(){
+    return fetch(SERVIDOR + '/api/generos', { signal: AbortSignal.timeout(2500) })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        motor = { ligado:true, nome:d.motor.nome, modelo:d.motor.modelo,
+                  licenca:d.motor.licenca, verificada:d.motor.licenca_verificada };
+        return true;
+      })
+      .catch(function(){ motor.ligado = false; return false; });
+  }
+
+  function gerar(){
+    var g = GENEROS[st.genero];
+    var corpo = {
+      texto: prompt().split('\n')[0],
+      titulo: st.titulo,
+      letra: st.voz === 'inst' ? '' : letra(),
+      duracao_s: 120,
+      estrutura: st.estrutura,
+      candidatos: 4,
+    };
+    var btn = document.getElementById('vmGerar');
+    if(btn){ btn.disabled = true; btn.textContent = 'a gerar…'; }
+    var barra = document.getElementById('vmProg');
+    if(barra) barra.hidden = false;
+
+    fetch(SERVIDOR + '/api/gerar', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(corpo)
+    }).then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d.erro) throw new Error(d.erro);
+        acompanhar(d.id);
+      })
+      .catch(function(e){
+        pararGeracao();
+        toast('<b>Não foi possível gerar.</b> ' + esc(e.message), 'red');
+      });
+  }
+
+  function acompanhar(id){
+    clearInterval(sonda);
+    sonda = setInterval(function(){
+      fetch(SERVIDOR + '/api/estado/' + id)
+        .then(function(r){ return r.json(); })
+        .then(function(t){
+          var b = document.getElementById('vmBarra');
+          var f = document.getElementById('vmFase');
+          if(b) b.style.width = (t.pct || 0) + '%';
+          if(f) f.textContent = (t.detalhe ? t.estado + ' · ' + t.detalhe : t.estado) +
+                                ' · ' + (t.pct || 0) + '%';
+          if(t.estado === 'pronto'){
+            clearInterval(sonda); pararGeracao();
+            resultadoVivo = t.resultado; render();
+            toast('<b>Pronto.</b> ' + t.resultado.resumo.gerados + ' candidatos gerados.', 'ok');
+          }
+          if(t.estado === 'erro'){
+            clearInterval(sonda); pararGeracao();
+            toast('<b>Falhou.</b> ' + esc(t.erro || ''), 'red');
+          }
+        })
+        .catch(function(){ clearInterval(sonda); pararGeracao(); });
+    }, 700);
+  }
+
+  function pararGeracao(){
+    var btn = document.getElementById('vmGerar');
+    if(btn){ btn.disabled = false; btn.textContent = '✦ Gerar música'; }
+    var barra = document.getElementById('vmProg');
+    if(barra) setTimeout(function(){ barra.hidden = true; }, 900);
+  }
+
   /* ---------- resultado do motor ---------- */
   var EIXOS = [['tecnica','Técnica'],['dinamica','Dinâmica'],['estereo','Estéreo'],
                ['espectro','Espectro'],['estrutura','Estrutura']];
@@ -152,10 +235,13 @@
   function corPont(p){ return p >= 75 ? 'var(--ok)' : p >= 55 ? 'var(--gold)' : 'var(--red)'; }
 
   function viewResultado(){
-    if(typeof VMDados === 'undefined') return '';
-    var d = VMDados, res = d.resumo;
+    var d = resultadoVivo || (typeof VMDados !== 'undefined' ? VMDados : null);
+    if(!d) return '';
+    var res = d.resumo;
+    var vivo = !!resultadoVivo;
 
-    return '<div class="section"><div class="section-head"><h2>Resultado</h2>' +
+    return '<div class="section"><div class="section-head">' +
+      '<h2>Resultado' + (vivo ? '' : ' — exemplo') + '</h2>' +
       '<span class="vm-meta">' + res.gerados + ' candidatos · ' +
       res.acima_do_minimo + ' acima da barreira · ' + res.segundos_gpu + 's de GPU</span></div>' +
 
@@ -168,6 +254,8 @@
               (c.escolhido ? '<span class="vm-tag">escolhido</span>' : '') +
               '<span class="vm-p" style="color:' + corPont(c.pontuacao) + '">' + c.pontuacao + '</span>' +
             '</div>' +
+            (c.audio ? '<audio class="vm-audio" controls preload="none" src="' +
+               esc(SERVIDOR + c.audio) + '"></audio>' : '') +
             '<div class="vm-eixos">' +
               EIXOS.map(function(e){
                 var v = c.eixos[e[0]] || 0;
@@ -189,6 +277,9 @@
         }).join('') +
       '</div>' +
 
+      (vivo ? '' : '<div class="vm-nota" style="border-left-color:var(--muted)">' +
+        '<b>Isto é um exemplo.</b> São medições reais de uma geração anterior, para veres o ' +
+        'formato. Liga o motor acima para gerares as tuas.</div>') +
       '<div class="vm-nota"><b>Como se escolhe.</b> Geram-se ' + res.gerados +
         ' e medem-se todos: clipping, silêncio, offset DC, fase, energia nos agudos, ' +
         'dinâmica e estabilidade do andamento. Mostram-se os dois melhores. ' +
@@ -305,14 +396,7 @@
         '</div>' +
         '<button class="btn btn-red btn-full" data-copiar="tudo">Copiar os dois</button>' +
 
-        '<div class="ai-breve motor">' +
-          '<b>Motor · ACE-Step 1.5 XL-SFT</b>' +
-          '<p>Local · licença MIT · 48 kHz · ' +
-            (typeof VMDados !== "undefined" ? VMDados.resumo.segundos_gpu + "s por lote de " +
-              VMDados.resumo.gerados : "por ligar") + '. ' +
-            'A licença dos pesos ainda não foi confirmada na página oficial — ' +
-            'não faturar antes disso.</p>' +
-        '</div>' +
+        viewMotor() +
         '<div class="ai-breve" hidden>' +
           '<b>Gerar áudio — por ligar</b>' +
           '<p>A geração de música exige um modelo generativo a correr numa GPU, ou uma API ' +
@@ -324,6 +408,34 @@
     viewResultado();
   }
 
+  /* ---------- caixa do motor ---------- */
+  function viewMotor(){
+    if(motor.ligado){
+      return '<div class="vm-motor on">' +
+        '<div class="vm-mh"><span class="vm-dot"></span>' +
+          '<b>Motor ligado</b>' +
+          '<span class="vm-mm">' + esc(motor.nome) + ' · ' + esc(motor.modelo || '—') + '</span></div>' +
+        (motor.nome === 'simulado'
+          ? '<p class="vm-mp">Motor <b>simulado</b>: produz áudio sintético, não música. ' +
+            'Serve para veres a cadeia. Arranca com <code>--motor acestep</code> quando tiveres GPU.</p>'
+          : '<p class="vm-mp">' + esc(motor.licenca || '') +
+            (motor.verificada ? '' : ' · <b>licença por confirmar</b> — não faturar antes disso') + '</p>') +
+        '<button class="btn btn-red btn-full" id="vmGerar">✦ Gerar música</button>' +
+        '<div id="vmProg" hidden>' +
+          '<div class="vm-pb"><span id="vmBarra"></span></div>' +
+          '<div class="vm-pf" id="vmFase">na fila</div>' +
+        '</div>' +
+      '</div>';
+    }
+    return '<div class="vm-motor">' +
+      '<div class="vm-mh"><span class="vm-dot off"></span><b>Motor desligado</b></div>' +
+      '<p class="vm-mp">O site não pode gerar música sozinho — isso precisa de um modelo a correr ' +
+        'numa máquina. Arranca o VMusicao no teu computador e o botão aparece aqui.</p>' +
+      '<pre class="vm-cmd">cd programa\npip install numpy scipy\npython3 servidor.py</pre>' +
+      '<button class="btn btn-ghost btn-full" id="vmProcurar">Procurar motor</button>' +
+    '</div>';
+  }
+
   /* ---------- ligações ---------- */
   function refrescar(){
     var p = document.getElementById('aiPrompt');
@@ -333,6 +445,18 @@
   }
 
   function bindCriar(){
+    var bg = document.getElementById('vmGerar');
+    if(bg) bg.addEventListener('click', gerar);
+    var bp = document.getElementById('vmProcurar');
+    if(bp) bp.addEventListener('click', function(){
+      bp.disabled = true; bp.textContent = 'a procurar…';
+      procurarMotor().then(function(achou){
+        if(achou){ toast('<b>Motor encontrado.</b> ' + esc(motor.nome), 'ok'); render(); }
+        else { bp.disabled = false; bp.textContent = 'Procurar motor';
+               toast('Nenhum motor em ' + SERVIDOR + '. Está a correr?', 'red'); }
+      });
+    });
+
     document.querySelectorAll('[data-modo]').forEach(function(b){
       b.addEventListener('click', function(){ st.modo=b.dataset.modo; render(); }); });
     document.querySelectorAll('[data-gen]').forEach(function(b){
@@ -399,6 +523,16 @@
 
   routes.criar = viewCriar;
   var _bv = bindView;
-  bindView = function(r,p){ _bv(r,p); if(r==='criar') bindCriar(); };
+  var jaProcurou = false;
+  bindView = function(r,p){
+    _bv(r,p);
+    if(r === 'criar'){
+      bindCriar();
+      if(!jaProcurou){
+        jaProcurou = true;
+        procurarMotor().then(function(achou){ if(achou) render(); });
+      }
+    }
+  };
   window.MACriar = { estado:st, prompt:prompt, letra:letra, GENEROS:GENEROS };
 })();

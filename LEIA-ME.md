@@ -40,10 +40,30 @@ Mais duas pastas de apoio, que **não são páginas do site**:
 
 ---
 
+## O botão Gerar — como funciona
+
+O site é estático: não pode correr um modelo de IA sozinho. Mas **pode falar
+com o gerador a correr na tua máquina**. Os browsers permitem uma página HTTPS
+chamar `localhost` — é a exceção que torna isto possível sem túneis nem
+certificados.
+
+```
+1. No teu computador:   cd programa && python3 servidor.py
+2. No site:             Estúdio AI → o botão "Gerar música" aparece sozinho
+```
+
+Com o servidor desligado, a caixa mostra o comando para o arrancar e um botão
+**Procurar motor**. Com ele ligado, aparece o botão **Gerar música**, a barra
+de progresso, e os candidatos com áudio para ouvir — tudo dentro do site.
+
+Se não aparecer: confirma que o servidor está a correr (`http://localhost:7800`
+deve abrir) e carrega em **Procurar motor**.
+
 ## programa/ — o gerador
 
 Isto **não vai para o GitHub Pages**. É um programa Python que corre no teu
-computador, com botão Gerar a sério.
+computador. Também tem interface própria em `http://localhost:7800`, se
+preferires usá-lo sem passar pelo site.
 
 ```bash
 cd programa
