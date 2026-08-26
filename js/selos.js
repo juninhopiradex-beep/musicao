@@ -75,6 +75,61 @@
     });
   }
 
+  /* ---------- geografia ----------
+     No protótipo simulamos as localidades. Em produção vêm do Worker:
+     GET /api/admin/geo?album=<slug>, já agregadas e com limiar aplicado. */
+  var MIN_LOCALIDADE = 3;   // abaixo disto, a localidade perde o nome
+
+  var LOCAIS = [
+    { cidade:'Luanda',      regiao:'Luanda',   pais:'AO', pais_nome:'Angola',        lon:13.2344, lat:-8.8383,  peso:46 },
+    { cidade:'Benguela',    regiao:'Benguela', pais:'AO', pais_nome:'Angola',        lon:13.4055, lat:-12.5763, peso:12 },
+    { cidade:'Huambo',      regiao:'Huambo',   pais:'AO', pais_nome:'Angola',        lon:15.7392, lat:-12.7761, peso:9 },
+    { cidade:'Lubango',     regiao:'Huíla',    pais:'AO', pais_nome:'Angola',        lon:13.4925, lat:-14.9177, peso:7 },
+    { cidade:'Cabinda',     regiao:'Cabinda',  pais:'AO', pais_nome:'Angola',        lon:12.2000, lat:-5.5500,  peso:5 },
+    { cidade:'Malanje',     regiao:'Malanje',  pais:'AO', pais_nome:'Angola',        lon:16.3410, lat:-9.5402,  peso:4 },
+    { cidade:'Namibe',      regiao:'Namibe',   pais:'AO', pais_nome:'Angola',        lon:12.1522, lat:-15.1961, peso:3 },
+    { cidade:'Soyo',        regiao:'Zaire',    pais:'AO', pais_nome:'Angola',        lon:12.3689, lat:-6.1349,  peso:2 },
+    { cidade:'Uíge',        regiao:'Uíge',     pais:'AO', pais_nome:'Angola',        lon:15.0614, lat:-7.6087,  peso:2 },
+    { cidade:'Lisboa',      regiao:'Lisboa',   pais:'PT', pais_nome:'Portugal',      lon:-9.1393, lat:38.7223,  peso:6 },
+    { cidade:'Porto',       regiao:'Porto',    pais:'PT', pais_nome:'Portugal',      lon:-8.6110, lat:41.1496,  peso:2 },
+    { cidade:'Joanesburgo', regiao:'Gauteng',  pais:'ZA', pais_nome:'África do Sul', lon:28.0473, lat:-26.2041, peso:3 },
+    { cidade:'Windhoek',    regiao:'Khomas',   pais:'NA', pais_nome:'Namíbia',       lon:17.0658, lat:-22.5597, peso:1 },
+    { cidade:'Brazzaville', regiao:'Brazzav.', pais:'CG', pais_nome:'Congo',         lon:15.2429, lat:-4.2634,  peso:1 },
+  ];
+
+  /* Distribui as ativações pelas localidades de forma estável:
+     a mesma edição dá sempre o mesmo mapa. */
+  function geoDe(e){
+    var ativ = (e.ativados || []).length;
+    if(!ativ) return null;
+    var somaPesos = LOCAIS.reduce(function(s,l){ return s + l.peso; }, 0);
+    var brutas = LOCAIS.map(function(l){
+      return { cidade:l.cidade, regiao:l.regiao, pais:l.pais, pais_nome:l.pais_nome,
+               lon:l.lon, lat:l.lat, n:Math.floor(ativ * l.peso / somaPesos) };
+    });
+    // o resto vai para a maior, para o total fechar
+    var colocadas = brutas.reduce(function(s,b){ return s + b.n; }, 0);
+    brutas[0].n += ativ - colocadas;
+
+    var visiveis = [], agrupadas = { n:0, locais:0 };
+    brutas.forEach(function(b){
+      if(b.n >= MIN_LOCALIDADE) visiveis.push(b);
+      else if(b.n > 0){ agrupadas.n += b.n; agrupadas.locais++; }
+    });
+    visiveis.sort(function(a,b){ return b.n - a.n; });
+
+    var porPais = {};
+    brutas.forEach(function(b){
+      if(!b.n) return;
+      if(!porPais[b.pais]) porPais[b.pais] = { pais:b.pais, pais_nome:b.pais_nome, n:0 };
+      porPais[b.pais].n += b.n;
+    });
+    var paises = Object.keys(porPais).map(function(k){ return porPais[k]; })
+      .sort(function(a,b){ return b.n - a.n; });
+
+    return { cidades:visiveis, paises:paises, agrupadas:agrupadas, resgatados:ativ, sem_local:0 };
+  }
+
   /* ---------- utilitários ---------- */
   function slugify(s){
     return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
@@ -177,6 +232,157 @@
     '</a>';
   }
 
+  /* ---------- painel de ativações por região ---------- */
+  function svgMapa(geo, escopo){
+    var m = MAMapas[escopo === 'mundo' ? 'mundo' : 'angola'];
+    var pts = escopo === 'mundo'
+      ? geo.cidades
+      : geo.cidades.filter(function(c){ return c.pais === 'AO'; });
+    if(!pts.length) return '';
+
+    var max = Math.max.apply(null, pts.map(function(c){ return c.n; }));
+    var base = escopo === 'mundo' ? 4 : 7;
+    var amp  = escopo === 'mundo' ? 11 : 17;
+
+    var fundo = escopo === 'mundo'
+      ? '<path class="mp-land" d="' + m.d + '"/>'
+      : (m.vizinhos || []).map(function(d){ return '<path class="mp-viz" d="' + d + '"/>'; }).join('') +
+        '<path class="mp-ao" d="' + m.d + '"/>';
+
+    /* Desenhar os maiores por cima e rotular só quando há espaço:
+       à escala mundial, Angola inteira cabe num punhado de pixels e
+       os nomes ficavam todos empilhados. */
+    var ordem = pts.slice().sort(function(a,b){ return b.n - a.n; });
+    var postos = [];                                  // rótulos já colocados
+    var minDist = escopo === 'mundo' ? 78 : 52;       // px entre rótulos
+    var ESQ = { Benguela:1, Namibe:1, Lubango:1 };
+
+    var bolas = ordem.map(function(c){
+      var p = MAMapas.projetar(escopo === 'mundo' ? 'mundo' : 'angola', c.lon, c.lat);
+      var r = base + Math.sqrt(c.n / max) * amp;
+      var fora = c.pais !== 'AO';
+      var out = '<circle class="mp-halo' + (fora ? ' mp-fora' : '') + '" cx="' + p[0].toFixed(1) +
+                '" cy="' + p[1].toFixed(1) + '" r="' + (r * 2.2).toFixed(1) + '"/>' +
+                '<circle class="mp-pin' + (fora ? ' mp-fora' : '') + '" cx="' + p[0].toFixed(1) +
+                '" cy="' + p[1].toFixed(1) + '" r="' + r.toFixed(1) + '">' +
+                '<title>' + esc(c.cidade) + ' · ' + fmtN(c.n) + ' ativações</title></circle>';
+
+      var livre = postos.every(function(q){
+        return Math.abs(q[0] - p[0]) > minDist || Math.abs(q[1] - p[1]) > 26;
+      });
+      if(livre && c.n >= max * 0.10){
+        var esq = !!ESQ[c.cidade];
+        out += '<text class="mp-lbl" x="' + (p[0] + (esq ? -(r + 9) : r + 9)).toFixed(1) +
+               '" y="' + (p[1] + 5).toFixed(1) + '" text-anchor="' + (esq ? 'end' : 'start') + '">' +
+               esc(c.cidade) + '</text>';
+        postos.push(p);
+      }
+      return out;
+    });
+    /* maiores por último, para ficarem por cima */
+    bolas = bolas.reverse().join('');
+
+    /* No mapa-múndi, enquadrar onde as ativações estão em vez de mostrar
+       o planeta inteiro — senão fica quase tudo oceano vazio. */
+    var vb;
+    if(escopo === 'mundo'){
+      var xs = [], ys = [];
+      pts.forEach(function(c){
+        var q = MAMapas.projetar('mundo', c.lon, c.lat);
+        xs.push(q[0]); ys.push(q[1]);
+      });
+      var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+      var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+      var pad = 90;
+      x0 -= pad; x1 += pad; y0 -= pad; y1 += pad;
+      var lw = Math.max(x1 - x0, 260), lh = Math.max(y1 - y0, 190);
+      /* manter a proporção do contentor para não distorcer */
+      var alvo = 1.30;
+      if(lw / lh < alvo){ var nw = lh * alvo; x0 -= (nw - lw) / 2; lw = nw; }
+      else { var nh = lw / alvo; y0 -= (nh - lh) / 2; lh = nh; }
+      vb = x0.toFixed(1) + ' ' + y0.toFixed(1) + ' ' + lw.toFixed(1) + ' ' + lh.toFixed(1);
+    } else {
+      vb = '-96 -8 ' + (m.w + 150) + ' ' + (m.h + 16);
+    }
+    return '<svg class="mp-svg" viewBox="' + vb + '" xmlns="http://www.w3.org/2000/svg" role="img" ' +
+           'aria-label="Mapa de ativações">' + fundo + bolas + '</svg>';
+  }
+
+  /* Evita "Luanda / Luanda": a província só aparece se disser algo de novo. */
+  function sublinha(c){
+    if(c.pais !== 'AO') return c.pais_nome;
+    return (c.regiao && c.regiao !== c.cidade) ? c.regiao : 'Angola';
+  }
+
+  function viewGeo(e){
+    var geo = geoDe(e);
+    if(!geo){
+      return '<div class="section"><div class="section-head"><h2>Onde foi ativado</h2></div>' +
+        '<div class="panel" style="text-align:center;padding:40px;color:var(--muted)">' +
+        'Ainda não há ativações. Assim que os primeiros discos forem validados, aparece aqui o mapa.</div></div>';
+    }
+    var fora = geo.paises.filter(function(p){ return p.pais !== 'AO'; });
+    var nFora = fora.reduce(function(s,p){ return s + p.n; }, 0);
+    var maxN = geo.cidades.length ? geo.cidades[0].n : 1;
+    var escopo = (e._escopoMapa === 'mundo') ? 'mundo' : 'angola';
+
+    var LIMITE = 8;
+    var topo = geo.cidades.slice(0, LIMITE);
+    var sobra = geo.cidades.slice(LIMITE);
+    var resto = {
+      n: sobra.reduce(function(s,c){ return s + c.n; }, 0) + geo.agrupadas.n,
+      locais: sobra.length + geo.agrupadas.locais,
+      anon: geo.agrupadas.locais,
+    };
+
+    return '<div class="section"><div class="section-head"><h2>Onde foi ativado</h2>' +
+      '<div class="mp-toggle">' +
+        '<button class="mp-tb' + (escopo === 'angola' ? ' on' : '') + '" data-mapa="angola" data-id="' + e.id + '">Angola</button>' +
+        '<button class="mp-tb' + (escopo === 'mundo' ? ' on' : '') + '" data-mapa="mundo" data-id="' + e.id + '">Mundo</button>' +
+      '</div></div>' +
+
+      '<div class="kpis" style="margin-bottom:18px">' +
+        '<div class="kpi"><div class="k-label">Localidades</div><div class="k-value">' +
+          fmtN(geo.cidades.length + geo.agrupadas.locais) + '</div></div>' +
+        '<div class="kpi"><div class="k-label">Países</div><div class="k-value">' + fmtN(geo.paises.length) + '</div></div>' +
+        '<div class="kpi gold"><div class="k-label">Em Angola</div><div class="k-value">' +
+          Math.round((geo.resgatados - nFora) / geo.resgatados * 100) + '%</div></div>' +
+        '<div class="kpi"><div class="k-label">Na diáspora</div><div class="k-value">' + fmtN(nFora) + '</div></div>' +
+      '</div>' +
+
+      '<div class="mp-wrap">' +
+        '<div class="mp-box">' + (geo.cidades.length
+          ? svgMapa(geo, escopo)
+          : '<div class="mp-vazio">Ainda não há nenhuma localidade com ' + MIN_LOCALIDADE +
+            ' ou mais ativações.<br>O mapa abre quando houver — até lá, mostrar um ponto ' +
+            'identificava a pessoa que o ativou.</div>') + '</div>' +
+        '<div class="mp-rank">' +
+          topo.map(function(c){
+            return '<div class="mp-rk' + (c.pais === 'AO' ? '' : ' fora') + '">' +
+              '<span class="mp-c">' + esc(c.cidade) + '<em>' + esc(sublinha(c)) + '</em></span>' +
+              '<span class="mp-b"><span style="width:' + Math.max(3, Math.round(c.n / maxN * 100)) + '%"></span></span>' +
+              '<span class="mp-n">' + fmtN(c.n) + '</span></div>';
+          }).join('') +
+          /* Tudo o que não coube — mais o que ficou abaixo do limiar — numa linha só,
+             para a soma da lista bater sempre com o total de ativações. */
+          (resto.n
+            ? '<div class="mp-rk resto"><span class="mp-c">Outras localidades<em>' + resto.locais +
+              (resto.anon ? ' locais · ' + resto.anon + ' abaixo de ' + MIN_LOCALIDADE : ' locais') + '</em></span>' +
+              '<span class="mp-b"><span style="width:' + Math.max(3, Math.round(resto.n / maxN * 100)) + '%"></span></span>' +
+              '<span class="mp-n">' + fmtN(resto.n) + '</span></div>'
+            : '') +
+        '</div>' +
+      '</div>' +
+
+      '<div class="sl-aviso" style="margin-top:16px">' +
+        '<b>Localização aproximada.</b> Vem da rede de quem ativou, não do telemóvel. ' +
+        'Ao nível de província é fiável; a cidade pode enganar com dados móveis ou VPN. ' +
+        'Localidades com menos de ' + MIN_LOCALIDADE + ' ativações ficam sem nome — numa vila pequena, ' +
+        'um único ponto apontava para uma pessoa.' +
+      '</div>' +
+    '</div>';
+  }
+
   /* ---------- detalhe de uma edição ---------- */
   function viewEdicao(id){
     var e = edicaoDe(id);
@@ -250,6 +456,9 @@
         '<div id="slVerifRes" class="sl-verif"></div>' +
       '</div>' +
     '</div>' +
+
+    /* Onde foi ativado */
+    viewGeo(e) +
 
     /* Ativações */
     '<div class="section"><div class="section-head"><h2>Ativações</h2>' +
@@ -444,6 +653,15 @@
         e.ativados.unshift({ serie:livre.serie, quando:nowStamp() });
         salvar();
         toast('Disco <b>n.º ' + livre.serie + '</b> ativado. Em produção isto vem do validador.', 'ok');
+        render();
+      });
+    });
+
+    document.querySelectorAll('[data-mapa]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var e = edicaoDe(b.dataset.id);
+        if(!e) return;
+        e._escopoMapa = b.dataset.mapa;
         render();
       });
     });

@@ -1,0 +1,1003 @@
+{
+ "_nota": "Preenche \"url\" e corre: python3 descobrir.py estacoes.json",
+ "_aviso": "Não usar URLs do myTuner: os termos proíbem acesso automatizado e os tokens expiram.",
+ "estacoes": [
+  {
+   "nome": "RNA · Canal A",
+   "regiao": "Nacional",
+   "grupo": "RNA",
+   "tipo": "nacional",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": true,
+   "notas": "URL do stream está no JavaScript do leitor — usar extrair_streams.py ou DevTools",
+   "programacao_musical": [
+    {
+     "programa": "HORA DO VINIL",
+     "dias": "seg-sex",
+     "inicio": "14:00",
+     "fim": "15:00"
+    },
+    {
+     "programa": "ALTAMENTE",
+     "dias": "seg-sex",
+     "inicio": "15:05",
+     "fim": "17:00"
+    },
+    {
+     "programa": "CONSTELAÇÕES",
+     "dias": "seg-sex",
+     "inicio": "19:07",
+     "fim": "19:55"
+    },
+    {
+     "programa": "ESTEIRA DA MÚSICA",
+     "dias": "sáb",
+     "inicio": "00:05",
+     "fim": "05:00"
+    },
+    {
+     "programa": "ESPETÁCULO MUSICAL",
+     "dias": "sáb",
+     "inicio": "05:00",
+     "fim": "06:00"
+    },
+    {
+     "programa": "QUISSANJE",
+     "dias": "sáb",
+     "inicio": "06:07",
+     "fim": "07:00"
+    },
+    {
+     "programa": "CANTARES DE ÁFRICA",
+     "dias": "sáb",
+     "inicio": "12:07",
+     "fim": "13:00"
+    },
+    {
+     "programa": "QUINTAL DO RITMO",
+     "dias": "sáb",
+     "inicio": "14:00",
+     "fim": "15:00"
+    },
+    {
+     "programa": "MUSICAL ANGOLANO",
+     "dias": "sáb",
+     "inicio": "19:02",
+     "fim": "20:00",
+     "nota": "só música angolana"
+    },
+    {
+     "programa": "DISCOLÂNDIA",
+     "dias": "sáb",
+     "inicio": "21:00",
+     "fim": "00:00"
+    },
+    {
+     "programa": "RODA DE AMIGOS",
+     "dias": "dom",
+     "inicio": "00:05",
+     "fim": "05:00"
+    },
+    {
+     "programa": "POEIRA NO QUINTAL",
+     "dias": "dom",
+     "inicio": "07:00",
+     "fim": "09:00"
+    },
+    {
+     "programa": "RECORDAR É VIVER",
+     "dias": "dom",
+     "inicio": "12:00",
+     "fim": "13:00"
+    },
+    {
+     "programa": "RÁDIO PIÔ",
+     "dias": "dom",
+     "inicio": "14:00",
+     "fim": "15:00"
+    },
+    {
+     "programa": "REENCONTRO",
+     "dias": "dom",
+     "inicio": "15:00",
+     "fim": "17:00"
+    },
+    {
+     "programa": "PÔR-DO-SOL",
+     "dias": "dom",
+     "inicio": "17:00",
+     "fim": "18:00"
+    },
+    {
+     "programa": "POEIRA NO QUINTAL",
+     "dias": "dom",
+     "inicio": "22:30",
+     "fim": "00:00"
+    }
+   ],
+   "nota_grelha": "Canal A é sobretudo informação. Só ~26h de música por semana.",
+   "pagina_sapo": "http://radios.sapo.ao/canal-a"
+  },
+  {
+   "nome": "RNA · Rádio 5 / Rádio Cinco",
+   "regiao": "Nacional",
+   "grupo": "RNA",
+   "tipo": "nacional",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false,
+   "notas": "Estação de desporto — pouca música. Baixa prioridade para monitorização.",
+   "formato": "desporto",
+   "pagina_sapo": "http://radios.sapo.ao/radio-cacuaco"
+  },
+  {
+   "nome": "RNA · Ngola Yetu",
+   "regiao": "Nacional",
+   "grupo": "RNA",
+   "tipo": "nacional",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": true,
+   "notas": "Emite em línguas nacionais — provável boa presença de música angolana.",
+   "formato": "línguas nacionais",
+   "pagina_sapo": "http://radios.sapo.ao/ngola-yetu"
+  },
+  {
+   "nome": "RNA · Rádio Cultura Angola",
+   "regiao": "Nacional",
+   "grupo": "RNA",
+   "tipo": "nacional",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false,
+   "notas": "No Zeno.fm — o endereço do stream sai da página com a consola, ou do DevTools. Formato: https://stream.zeno.fm/<mount>",
+   "formato": "cultura",
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-tv7-angola-qdvx/"
+  },
+  {
+   "nome": "RNA · RNA Internacional",
+   "regiao": "Nacional",
+   "grupo": "RNA",
+   "tipo": "nacional",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false,
+   "notas": "URL do stream está no JavaScript do leitor — usar extrair_streams.py ou DevTools"
+  },
+  {
+   "nome": "RNA · Rádio Luanda",
+   "regiao": "Luanda",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": true,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-luanda-rna/",
+   "notas": "No Zeno.fm — o endereço do stream sai da página com a consola, ou do DevTools. Formato: https://stream.zeno.fm/<mount>"
+  },
+  {
+   "nome": "RNA · Rádio Benguela",
+   "regiao": "Benguela",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Huambo",
+   "regiao": "Huambo",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Huíla",
+   "regiao": "Huíla",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Cabinda",
+   "regiao": "Cabinda",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Malange",
+   "regiao": "Malanje",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": true,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-malange/",
+   "notas": "No Zeno.fm — o endereço do stream sai da página com a consola, ou do DevTools. Formato: https://stream.zeno.fm/<mount>"
+  },
+  {
+   "nome": "RNA · Rádio Bié",
+   "regiao": "Bié",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Uíge",
+   "regiao": "Uíge",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Zaire",
+   "regiao": "Zaire",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Namibe",
+   "regiao": "Namibe",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Moxico",
+   "regiao": "Moxico",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Cunene",
+   "regiao": "Cunene",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Cuando Cubango",
+   "regiao": "Cuando Cubango",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Lunda Norte",
+   "regiao": "Lunda Norte",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Lunda Sul",
+   "regiao": "Lunda Sul",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Cuanza Norte",
+   "regiao": "Cuanza Norte",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Cuanza Sul",
+   "regiao": "Cuanza Sul",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Bengo",
+   "regiao": "Bengo",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Lobito",
+   "regiao": "Benguela",
+   "grupo": "RNA",
+   "tipo": "provincial",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Viana",
+   "regiao": "Luanda",
+   "grupo": "RNA",
+   "tipo": "municipal",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Cacuaco",
+   "regiao": "Luanda",
+   "grupo": "RNA",
+   "tipo": "municipal",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · Rádio Cazenga",
+   "regiao": "Luanda",
+   "grupo": "RNA",
+   "tipo": "municipal",
+   "site": "https://rna.ao/rna.ao/em-directo/",
+   "url": null,
+   "ativa": false,
+   "prioridade": false,
+   "pagina_sapo": "http://radios.sapo.ao/cazenga"
+  },
+  {
+   "nome": "Rádio MFM 91.7",
+   "regiao": "Luanda",
+   "url": "https://centova87.instainternet.com/proxy/radiomfm?mp=/live",
+   "site": "https://radiomfmangola.com/",
+   "ativa": true,
+   "prioridade": true,
+   "plataforma": "Centova Cast",
+   "metadata": "https://centova87.instainternet.com/rpc/radiomfm/streaminfo.get",
+   "notas": "URL publicado no rodapé do site oficial. App Android: com.youngarts.radiomfm",
+   "programacao_musical": [
+    "Só as melhores seg-sex 14-16h",
+    "Boa Vibe seg-sex 16-18h",
+    "Batucada seg-sex 18-20h"
+   ]
+  },
+  {
+   "nome": "LAC - Luanda Antena Comercial",
+   "regiao": "Luanda",
+   "url": null,
+   "site": null,
+   "ativa": false,
+   "prioridade": true,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/luanda-antena-comercial-lac/",
+   "notas": "No Zeno.fm — o endereço do stream sai da página com a consola, ou do DevTools. Formato: https://stream.zeno.fm/<mount>",
+   "zeno_uuid": "194d4d7e-3447-11e8-bb9b-52543be04c81",
+   "pagina_sapo": "http://radios.sapo.ao/lac"
+  },
+  {
+   "nome": "Rádio Ecclésia Malanje",
+   "regiao": "Malanje",
+   "url": null,
+   "site": "https://www.radioplaydigital.com/radios/radio-ecclesia/68c7f7f59bc44bf07fdae109",
+   "ativa": false,
+   "prioridade": true,
+   "agregador": "RadioPlayDigital",
+   "notas": "Página é Next.js — conteúdo carrega por JavaScript. Usar consola. Alternativa: falar com o RadioPlayDigital (Luanda), que já tem o stream."
+  },
+  {
+   "nome": "Rádio Essencial 96.1",
+   "regiao": "Luanda",
+   "url": null,
+   "site": "https://radioessencial.co.ao/",
+   "ativa": false,
+   "prioridade": false,
+   "plataforma": "WebRadioSite",
+   "widget_source": "8983",
+   "endpoint_info": "https://public-player-widget.webradiosite.com/app/player/info/162161?hash=e293b26c2d9a4f742a4d8d44d8dc4b346b383e3d",
+   "formato": "palavra",
+   "notas": "\"Uma rádio de palavra\" — pouca música, prioridade baixa. Abrir o endpoint_info no browser: devolve JSON com o stream e o que está a tocar."
+  },
+  {
+   "nome": "Rádio Mais Huambo",
+   "regiao": "Huambo",
+   "url": null,
+   "site": "https://radiomais.ao/emissao-online/",
+   "ativa": false,
+   "prioridade": true,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-mais-huambo/",
+   "notas": "Rede de 5 estações do grupo Medianova. Formato musical — alta prioridade. Streams no Zeno.fm; endereço sai da página do Zeno com a consola.",
+   "frequencia": "89.9 FM",
+   "grupo": "Medianova",
+   "formato": "musical",
+   "programas_musicais": [
+    "Clube do DJ",
+    "Cidade do Rap",
+    "Jazz em Casa",
+    "Boa Vibe",
+    "Continente Berço",
+    "Sábado Gordo",
+    "Tardes Mais",
+    "Luz Câmera Acção"
+   ]
+  },
+  {
+   "nome": "Rádio Maria Angola",
+   "regiao": "Nacional",
+   "url": null,
+   "site": "https://www.radiomaria.co.ao/",
+   "ativa": false,
+   "prioridade": false,
+   "grupo": "Radio Maria World Family",
+   "formato": "religioso",
+   "robots": "proibe acesso automatizado",
+   "notas": "robots.txt proíbe leitura automática do site — não extrair daí. Conteúdo religioso, pouca música do catálogo. Pedir autorização antes de escutar."
+  },
+  {
+   "nome": "Rádio Mais Huíla",
+   "regiao": "Huíla",
+   "url": null,
+   "site": "https://radiomais.ao/emissao-online/",
+   "ativa": false,
+   "prioridade": true,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-mais-huila/",
+   "notas": "Rede de 5 estações do grupo Medianova. Formato musical — alta prioridade. Streams no Zeno.fm; endereço sai da página do Zeno com a consola.",
+   "frequencia": "91.3 FM",
+   "grupo": "Medianova",
+   "formato": "musical",
+   "programas_musicais": [
+    "Clube do DJ",
+    "Cidade do Rap",
+    "Jazz em Casa",
+    "Boa Vibe",
+    "Continente Berço",
+    "Sábado Gordo",
+    "Tardes Mais",
+    "Luz Câmera Acção"
+   ]
+  },
+  {
+   "nome": "Rádio Luanda Live",
+   "regiao": "Luanda",
+   "url": "https://sonicpanel.oficialserver.com/8262/stream",
+   "site": "https://radioluandalive.blogspot.com",
+   "ativa": true,
+   "prioridade": true,
+   "plataforma": "SonicPanel",
+   "porta": 8262,
+   "fonte_url": "site oficial (blogspot)",
+   "metadata": "https://sonicpanel.oficialserver.com/rpc/8262/streaminfo.get",
+   "notas": "URL no topo do blog. SonicPanel usa API compatível com Centova — confirmar o endpoint de metadados com metadados.py."
+  },
+  {
+   "nome": "STTOP FM 107.3",
+   "regiao": "Luanda",
+   "url": null,
+   "site": "https://www.sttopfm.com/radio",
+   "ativa": false,
+   "prioridade": true,
+   "frequencia": "107.3 FM",
+   "tecnologia": "Next.js (conteúdo por JavaScript)",
+   "grupo": "STTOP TV",
+   "contacto": {
+    "email": "geral@sttoptv.com",
+    "whatsapp": "+244 945 310 439",
+    "instagram": "https://www.instagram.com/sttopfm/"
+   },
+   "notas": "Portal com TV e rádio. Endereço não visível no HTML — consola, ou pedir por WhatsApp."
+  },
+  {
+   "nome": "Rádio Mais Benguela",
+   "regiao": "Benguela",
+   "url": null,
+   "site": "https://radiomais.ao/emissao-online/",
+   "ativa": false,
+   "prioridade": true,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-mais-benguela/",
+   "notas": "Rede de 5 estações do grupo Medianova. Formato musical — alta prioridade. Streams no Zeno.fm; endereço sai da página do Zeno com a consola.",
+   "frequencia": "96.3 FM",
+   "grupo": "Medianova",
+   "formato": "musical",
+   "programas_musicais": [
+    "Clube do DJ",
+    "Cidade do Rap",
+    "Jazz em Casa",
+    "Boa Vibe",
+    "Continente Berço",
+    "Sábado Gordo",
+    "Tardes Mais",
+    "Luz Câmera Acção"
+   ]
+  },
+  {
+   "nome": "Radio FamaStar",
+   "regiao": "Luanda",
+   "url": null,
+   "site": null,
+   "ativa": false,
+   "prioridade": true,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-famastar/",
+   "dominio_antigo": "radiofamastar.com — expirado, hoje é um site de spam. Não usar.",
+   "notas": "O domínio original caducou. Usar a página do Zeno.fm."
+  },
+  {
+   "nome": "Rádio Luanda FM Line",
+   "regiao": "Luanda",
+   "url": null,
+   "site": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "Rádio Kuia Bue",
+   "regiao": "Luanda",
+   "url": null,
+   "site": "https://radiokuiabue.us",
+   "ativa": false,
+   "prioridade": true,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-kuia-bue-fm/",
+   "notas": "Site bloqueia leitura automática. Usar a página do Zeno.fm.",
+   "robots": "proíbe acesso automatizado ao site",
+   "formato": "musical"
+  },
+  {
+   "nome": "FM Afro 103.3",
+   "regiao": "Luanda",
+   "url": null,
+   "site": "https://fmafro.com",
+   "ativa": false,
+   "prioridade": true,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/fm-afro/",
+   "notas": "Rádio dedicada a música afro — das mais relevantes para o catálogo. Player Zeno em zeno.fm/player/fm-afro; o mount sai da consola.",
+   "frequencia": "103.3 FM",
+   "mount": null,
+   "formato": "musical · afro",
+   "contacto": {
+    "telefone": "+244 921 997 205",
+    "email": "fmafro.comercial@iguanalda.com"
+   },
+   "empresa": "Iguana Lda"
+  },
+  {
+   "nome": "Rádio Nosso Tempo",
+   "regiao": "Luanda",
+   "url": null,
+   "site": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "Rádio Jihenda",
+   "regiao": "Luanda",
+   "url": null,
+   "site": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "Rádio Zango 8000",
+   "regiao": "Luanda",
+   "url": "https://stream1.svrdedicado.org/cp/widgets/player/single/?p=8042",
+   "site": "https://www.radiozango8000.com/",
+   "ativa": true,
+   "prioridade": true,
+   "plataforma": "SonicPanel",
+   "pagina_zeno": "https://zeno.fm/radio/radio-zango-8000-xd5w/",
+   "notas": "O link do site é o widget. O stream directo costuma ser servidor:porta/stream — confirmar com descobrir.py. Promove música nacional; boa candidata a parceria.",
+   "stream_directo": "https://stream1.svrdedicado.org:8042/stream",
+   "conta": 8042,
+   "fonte_url": "site oficial",
+   "empresa": "CSM Entretenimento / CSM Áudio Visual",
+   "contacto": {
+    "whatsapp": "+244 912 483 689",
+    "comercial": "+244 925 459 845",
+    "email": "radiozango8000@gmail.com"
+   }
+  },
+  {
+   "nome": "Powermix FM",
+   "regiao": "Luanda",
+   "url": null,
+   "site": "https://powermixfm.eu",
+   "ativa": false,
+   "prioridade": true,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/powermix-fm-radio/",
+   "notas": "Site bloqueia robôs. Usar o Zeno.",
+   "robots": "proíbe acesso automatizado"
+  },
+  {
+   "nome": "Hero Radio Angola",
+   "regiao": "Luanda",
+   "url": null,
+   "site": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "ValerFM / ValerTV",
+   "regiao": "Luanda",
+   "url": null,
+   "site": "http://valervtv.blogspot.com/",
+   "ativa": false,
+   "prioridade": false,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/valerfm/",
+   "notas": "O blog é de downloads de gospel, sem player. Última atualização em 2022. Usar o Zeno.",
+   "formato": "religioso · gospel",
+   "contacto": {
+    "telefone": "+244 990 845 039",
+    "email": "valervtv@gmail.com"
+   }
+  },
+  {
+   "nome": "Rádio 2 de Maio",
+   "regiao": "Quissala",
+   "url": null,
+   "site": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "Rádio Fé Angola",
+   "regiao": "Luanda",
+   "url": null,
+   "site": null,
+   "ativa": false,
+   "prioridade": false
+  },
+  {
+   "nome": "Rádio Mais Luanda",
+   "regiao": "Luanda",
+   "ativa": false,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-mais-luanda/",
+   "url": null,
+   "prioridade": true,
+   "notas": "Rede de 5 estações do grupo Medianova. Formato musical — alta prioridade. Streams no Zeno.fm; endereço sai da página do Zeno com a consola.",
+   "frequencia": "99.1 FM",
+   "grupo": "Medianova",
+   "site": "https://radiomais.ao/emissao-online/",
+   "formato": "musical",
+   "programas_musicais": [
+    "Clube do DJ",
+    "Cidade do Rap",
+    "Jazz em Casa",
+    "Boa Vibe",
+    "Continente Berço",
+    "Sábado Gordo",
+    "Tardes Mais",
+    "Luz Câmera Acção"
+   ]
+  },
+  {
+   "nome": "Rádio Mais Cabinda",
+   "regiao": "Cabinda",
+   "ativa": false,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-mais-cabinda/",
+   "url": null,
+   "prioridade": true,
+   "notas": "Rede de 5 estações do grupo Medianova. Formato musical — alta prioridade. Streams no Zeno.fm; endereço sai da página do Zeno com a consola.",
+   "frequencia": "92.3 / 92.7 FM",
+   "grupo": "Medianova",
+   "site": "https://radiomais.ao/emissao-online/",
+   "formato": "musical",
+   "programas_musicais": [
+    "Clube do DJ",
+    "Cidade do Rap",
+    "Jazz em Casa",
+    "Boa Vibe",
+    "Continente Berço",
+    "Sábado Gordo",
+    "Tardes Mais",
+    "Luz Câmera Acção"
+   ]
+  },
+  {
+   "nome": "Radio FamaStar",
+   "regiao": "Luanda",
+   "ativa": false,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-famastar/",
+   "url": null,
+   "prioridade": true,
+   "notas": "O domínio original caducou. Usar a página do Zeno.fm.",
+   "dominio_antigo": "radiofamastar.com — expirado, hoje é um site de spam. Não usar."
+  },
+  {
+   "nome": "Rádio D'Agosto",
+   "regiao": "Luanda",
+   "ativa": false,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-dagosto/",
+   "url": null,
+   "prioridade": false,
+   "notas": "No Zeno.fm — o endereço do stream sai da página com a consola, ou do DevTools. Formato: https://stream.zeno.fm/<mount>"
+  },
+  {
+   "nome": "Rádio Sucupira",
+   "regiao": "Luanda",
+   "ativa": false,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-sucupira/",
+   "url": null,
+   "prioridade": true,
+   "notas": "No Zeno.fm — o endereço do stream sai da página com a consola, ou do DevTools. Formato: https://stream.zeno.fm/<mount>"
+  },
+  {
+   "nome": "Radio Nova",
+   "regiao": "Luanda",
+   "ativa": false,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-novau1767kvq1p8uv/",
+   "url": null,
+   "prioridade": false,
+   "notas": "No Zeno.fm — o endereço do stream sai da página com a consola, ou do DevTools. Formato: https://stream.zeno.fm/<mount>"
+  },
+  {
+   "nome": "Rádio Vibrar Angola",
+   "regiao": "Luanda",
+   "ativa": false,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-vibrar-angola/",
+   "url": null,
+   "prioridade": false,
+   "notas": "No Zeno.fm — o endereço do stream sai da página com a consola, ou do DevTools. Formato: https://stream.zeno.fm/<mount>"
+  },
+  {
+   "nome": "RÁDIO ECCLESIA CAXITO",
+   "regiao": "Bengo",
+   "ativa": false,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-ecclesia-caxito/",
+   "url": null,
+   "prioridade": false,
+   "notas": "No Zeno.fm — o endereço do stream sai da página com a consola, ou do DevTools. Formato: https://stream.zeno.fm/<mount>"
+  },
+  {
+   "nome": "Rádio Kamwenho Notícias",
+   "regiao": "Luanda",
+   "ativa": false,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-kamwenho-noticias/",
+   "url": null,
+   "prioridade": false,
+   "notas": "No Zeno.fm — o endereço do stream sai da página com a consola, ou do DevTools. Formato: https://stream.zeno.fm/<mount>"
+  },
+  {
+   "nome": "RCJ-Rádio Casa de JESUS",
+   "regiao": "Luanda",
+   "ativa": false,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/rcj-radio-casa-de-jesus/",
+   "url": null,
+   "prioridade": false,
+   "notas": "No Zeno.fm — o endereço do stream sai da página com a consola, ou do DevTools. Formato: https://stream.zeno.fm/<mount>"
+  },
+  {
+   "nome": "IPFL IMPACTO DE FÉ",
+   "regiao": "Luanda",
+   "ativa": false,
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/radio/radio-ipfl-online/",
+   "url": null,
+   "prioridade": false,
+   "notas": "No Zeno.fm — o endereço do stream sai da página com a consola, ou do DevTools. Formato: https://stream.zeno.fm/<mount>"
+  },
+  {
+   "nome": "Rádio Lazer",
+   "regiao": "Luanda",
+   "site": "https://radio-lazer.blogspot.com/",
+   "url": "https://stream.zeno.fm/h180isv1gjetv",
+   "plataforma": "Zeno.fm",
+   "mount": "h180isv1gjetv",
+   "fonte_url": "site oficial",
+   "ativa": true,
+   "prioridade": true,
+   "notas": "Mount do Zeno à vista no blog. Programação musical diversificada."
+  },
+  {
+   "nome": "Rádio UNIA",
+   "regiao": "Luanda",
+   "pagina_sapo": "http://radios.sapo.ao/unia",
+   "url": null,
+   "site": "http://radiounia.com/",
+   "notas": "Rádio da Universidade Independente de Angola. Também no SAPO.",
+   "prioridade": false
+  },
+  {
+   "nome": "RNA · FM Estéreo",
+   "regiao": "Luanda",
+   "pagina_sapo": "http://radios.sapo.ao/fm-estereo",
+   "url": null,
+   "grupo": "RNA",
+   "prioridade": true,
+   "formato": "musical",
+   "notas": "Canal musical da RNA — dos mais relevantes do grupo público."
+  },
+  {
+   "nome": "Beatbox Angola",
+   "regiao": "Luanda",
+   "site": "https://www.beatboxangola.com/",
+   "prioridade": true,
+   "formato": "musical",
+   "url": null,
+   "notas": "Nome sugere formato musical — alta prioridade. Por abrir."
+  },
+  {
+   "nome": "Rádio Despertar 91.0",
+   "regiao": "Luanda",
+   "frequencia": "91.0 FM",
+   "site": "http://radiodespertarangola.net/",
+   "prioridade": true,
+   "url": null
+  },
+  {
+   "nome": "CEFOJOR",
+   "regiao": "Luanda",
+   "site": "http://cefojor.sites.sapo.ao/",
+   "prioridade": false,
+   "notas": "Centro de formação de jornalistas, não é estação comercial."
+  },
+  {
+   "nome": "SOM News Angola",
+   "regiao": "Luanda",
+   "plataforma": "Zeno.fm",
+   "pagina_zeno": "https://zeno.fm/som-newsangola/",
+   "url": null,
+   "prioridade": false
+  }
+ ],
+ "_como_obter_urls": [
+  "1. Abrir https://rna.ao/rna.ao/em-directo/ (tem os 27 canais numa página)",
+  "2. F12 -> Console -> colar o conteúdo de apanhar-streams-consola.js",
+  "3. Carregar no play de cada canal",
+  "4. Escrever streamsJSON() -> copia o JSON com nome + url de todos",
+  "Em alternativa: F12 -> Network -> filtro Media -> play -> copiar o endereço"
+ ],
+ "_parceiros_possiveis": [
+  {
+   "nome": "RadioPlayDigital",
+   "onde": "Luanda, Angola",
+   "email": "geral@radioplaydigital.com",
+   "telefone": "+244 925 175 243",
+   "listagem": "https://www.radioplaydigital.com/radios",
+   "porque": "Agrega rádios angolanas e podcasts. Já tem os streams reunidos. Uma conversa pode valer mais do que caçar 49 endereços um a um."
+  },
+  {
+   "nome": "Medianova",
+   "site": "https://medianova.ao",
+   "estacoes": 5,
+   "provincias": [
+    "Luanda",
+    "Benguela",
+    "Huambo",
+    "Huíla",
+    "Cabinda"
+   ],
+   "porque": "Dono das 5 Rádio Mais. Um contacto abre 5 estações musicais em 5 províncias."
+  }
+ ],
+ "_zeno": {
+  "diretorio": "https://zeno.fm/radio/countries/Angola/",
+  "formato_stream": "https://stream.zeno.fm/<mount>",
+  "nota": "Pelo menos 24 rádios angolanas estão no Zeno.fm. Uma só página, um só formato de endereço. Abrir o diretório com apanhar-streams-consola.js e carregar no play de cada uma resolve o grosso da lista."
+ },
+ "_radiobrowser": {
+  "api": "https://all.api.radio-browser.info/json/stations/bycountrycodeexact/AO",
+  "porque": "Base comunitária aberta, com os endereços dos streams. Sem termos a proibir uso automatizado.",
+  "como": "python3 radiobrowser.py --juntar estacoes.json"
+ },
+ "_por_contacto_directo": [
+  {
+   "nome": "Rádio Ecclésia Malanje",
+   "contacto": "https://www.radioplaydigital.com/radios/radio-ecclesia/68c7f7f59bc44bf07fdae109"
+  },
+  {
+   "nome": "Rádio Essencial 96.1",
+   "contacto": "https://radioessencial.co.ao/"
+  },
+  {
+   "nome": "Rádio Maria Angola",
+   "contacto": "https://www.radiomaria.co.ao/"
+  },
+  {
+   "nome": "STTOP FM 107.3",
+   "contacto": {
+    "email": "geral@sttoptv.com",
+    "whatsapp": "+244 945 310 439",
+    "instagram": "https://www.instagram.com/sttopfm/"
+   }
+  },
+  {
+   "nome": "Rádio Luanda FM Line",
+   "contacto": null
+  },
+  {
+   "nome": "Rádio Nosso Tempo",
+   "contacto": null
+  },
+  {
+   "nome": "Rádio Jihenda",
+   "contacto": null
+  },
+  {
+   "nome": "Hero Radio Angola",
+   "contacto": null
+  },
+  {
+   "nome": "Rádio 2 de Maio",
+   "contacto": null
+  },
+  {
+   "nome": "Rádio Fé Angola",
+   "contacto": null
+  }
+ ],
+ "_sapo": {
+  "portal": "http://radios.sapo.ao/",
+  "robots": "proíbe acesso automatizado",
+  "estacoes": 12,
+  "porque_importa": "Agrega canais da RNA (Canal A, Rádio 5, Ngola Yetu, Cazenga, FM Estéreo) que o site da RNA não deixa apanhar. O player é antigo e simples — provável que o endereço apareça logo no DevTools.",
+  "como": "Abrir radios.sapo.ao no browser, F12 -> Network -> Media -> play."
+ }
+}

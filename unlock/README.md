@@ -110,6 +110,40 @@ sem código nenhum.
 Downloads exclusivos: mete os ficheiros num bucket R2 e usa a chave em `extra[].key`.
 O Worker devolve links assinados que expiram em 15 minutos.
 
+## Onde foram ativados os discos
+
+A geografia vem do edge da Cloudflare (`request.cf`) — sem serviço externo, sem custo,
+sem SDK no browser. Guardamos país, província, cidade e coordenadas aproximadas.
+**O IP nunca é guardado em claro**, só o hash.
+
+Se já tinhas a base de dados criada, corre a migração uma vez:
+
+```bash
+wrangler d1 execute beatfreak-unlock --remote --file=migracao-geo.sql
+```
+
+Consultar:
+
+```bash
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "https://unlock.musicao.ao/api/admin/geo?album=ga"
+```
+
+Devolve já agregado — nunca ativações individuais.
+
+### O limiar de anonimato
+
+Localidades com menos de **3 ativações** não aparecem pelo nome; são somadas em
+"Outras localidades". Numa vila pequena, "1 ativação em Caxito" aponta para uma
+pessoa concreta, e o artista não precisa disso para tomar decisões. Ajusta em
+`MIN_LOCALIDADE` no `worker.js` se o teu caso pedir outro valor.
+
+### Precisão
+
+Ao nível de província é fiável. A cidade erra com frequência em quem usa dados
+móveis (o operador pode encaminhar por Luanda) ou VPN. Diz isso ao artista no
+painel — uma decisão de digressão tomada com base num ponto errado sai cara.
+
 ## Painel
 
 ```bash

@@ -1,15 +1,22 @@
 /* Music AO — Service Worker (cache-first para o shell da app) */
-const CACHE = 'musicao-v2';   // subir a cada atualização — senão o browser serve a versão antiga
+const CACHE = 'musicao-v6';   // subir a cada atualização, senão os visitantes continuam com a versão antiga
 const ASSETS = [
   './',
   './index.html',
   './css/style.css',
   './css/selos.css',
+  './css/radio.css',
+  './css/criar.css',
   './js/data.js',
   './js/audio.js',
   './js/app.js',
   './js/qr.js',
+  './js/mapa.js',
   './js/selos.js',
+  './js/radio.js',
+  './js/criar.js',
+  './js/vm-dados.js',
+  './js/radio-dados.js',
   './manifest.webmanifest',
 ];
 

@@ -24,16 +24,24 @@ isto continuas a ver a versão antiga.
 **Novo — módulo Selos de CD**
 
 ```
-js/selos.js       o módulo: criar edições, gerar códigos, exportar, imprimir
+js/selos.js       o módulo: criar edições, gerar códigos, exportar, imprimir,
+                  e o painel de ativações por região
 js/qr.js          codificador QR, sem dependências
-css/selos.css     estilos, só classes .sl-*
+js/mapa.js        contornos de Angola e do mundo + projeção Mercator
+js/criar.js       Estúdio AI — prompt, letra e resultado do motor
+js/vm-dados.js    candidatos reais medidos pelo VMusicao (demonstração)
+js/radio.js       painel de monitorização de rádio
+js/radio-dados.js deteções reais produzidas pelo motor (demonstração)
+css/selos.css     estilos, só classes .sl-* e .mp-*
+css/radio.css     estilos do painel de rádio
+css/criar.css     estilos do Estúdio AI
 ```
 
 **Alterado**
 
 ```
-index.html        4 linhas acrescentadas (css, link na barra lateral, 2 scripts)
-sw.js             cache v1 → v2 e os ficheiros novos na lista
+index.html        8 linhas acrescentadas (2 css, 2 links laterais, 5 scripts)
+sw.js             cache v1 → v6 e os ficheiros novos na lista
 README.md         secção sobre os selos
 ```
 
@@ -44,6 +52,7 @@ O `js/app.js` **não foi tocado**. O módulo auto-regista-se no router, por isso
 
 ```
 unlock/           backend de validação (Cloudflare Worker) — deploy separado
+radio/            monitor de rádio em Python — corre num servidor à parte
 ferramentas/      gerador de chaves offline, funciona sem a plataforma
 .nojekyll         impede o Jekyll de processar os ficheiros no Pages
 ```

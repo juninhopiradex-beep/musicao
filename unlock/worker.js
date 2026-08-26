@@ -23,6 +23,7 @@
  *   POST /api/redeem    valida e marca como usado
  *   GET  /api/session   quem já desbloqueou volta a entrar
  *   GET  /api/file      ficheiro exclusivo, link assinado
+ *   GET  /api/admin/geo?album=  onde foram ativados os discos, já agregado
  *   /api/admin/*        painel, protegido por token
  */
 
@@ -65,6 +66,21 @@ const MAX_ATTEMPTS = 8;      // por IP
 const WINDOW_SEC   = 60;
 const LINK_TTL     = 900;    // 15 min para os downloads
 const SESSION_DAYS = 365;
+
+/* Localidades com menos ativações do que isto não aparecem pelo nome.
+   Numa vila pequena, "1 ativação em Cacuaco" aponta para uma pessoa.
+   Abaixo do limiar juntamos tudo em "Outras localidades". */
+const MIN_LOCALIDADE = 3;
+
+/* Nomes em português dos países que mais aparecem. Os outros ficam pelo código ISO. */
+const PAISES = {
+  AO:'Angola', PT:'Portugal', BR:'Brasil', ZA:'África do Sul', NA:'Namíbia',
+  CD:'RD Congo', CG:'Congo', ZM:'Zâmbia', MZ:'Moçambique', CV:'Cabo Verde',
+  ST:'São Tomé e Príncipe', GW:'Guiné-Bissau', FR:'França', GB:'Reino Unido',
+  US:'Estados Unidos', ES:'Espanha', NL:'Países Baixos', BE:'Bélgica',
+  DE:'Alemanha', CH:'Suíça', LU:'Luxemburgo', IE:'Irlanda', CA:'Canadá',
+  IT:'Itália', NG:'Nigéria', CI:'Costa do Marfim', KE:'Quénia', AE:'Emirados Árabes',
+};
 
 /* ── utilitários ───────────────────────────────────── */
 const te = new TextEncoder();
@@ -225,11 +241,24 @@ async function redeem(request, env) {
   const now = new Date().toISOString();
 
   // Barreira 2 — atómico. Só um pedido consegue mudar a linha.
+  /* Geografia: vem do edge da Cloudflare, sem serviço externo nem custo.
+     Nível de província é fiável; a cidade erra com dados móveis e VPN. */
+  const cf = request.cf || {};
+  const geo = [
+    cf.country || null,
+    cf.country ? (PAISES[cf.country] || cf.country) : null,
+    cf.region || null,
+    cf.city || null,
+    cf.latitude ? +cf.latitude : null,
+    cf.longitude ? +cf.longitude : null,
+  ];
+
   const res = await env.DB.prepare(
-    `UPDATE keys SET status='redeemed', redeemed_at=?, device=?, ip_hash=?, ua=?
+    `UPDATE keys SET status='redeemed', redeemed_at=?, device=?, ip_hash=?, ua=?,
+            pais=?, pais_nome=?, regiao=?, cidade=?, lat=?, lon=?
      WHERE code_hash=? AND status='unused'`
   ).bind(now, String(device).slice(0, 64), ipHash,
-         (request.headers.get('User-Agent') || '').slice(0, 180), hash).run();
+         (request.headers.get('User-Agent') || '').slice(0, 180), ...geo, hash).run();
 
   if (res.meta.changes === 1) {
     const row = await env.DB.prepare('SELECT serial, album FROM keys WHERE code_hash = ?').bind(hash).first();
@@ -301,11 +330,55 @@ async function admin(path, request, env) {
     return json({ ok: true, totals: rows.results, recent: recent.results });
   }
 
+  /* Onde foram ativados os discos.
+     Devolve já agregado — o painel nunca vê ativações individuais. */
+  if (path === '/api/admin/geo') {
+    const album = new URL(request.url).searchParams.get('album');
+    if (!album) return json({ error: 'album_required' }, 400);
+
+    const cidades = await env.DB.prepare(
+      `SELECT pais, pais_nome, regiao, cidade,
+              AVG(lat) AS lat, AVG(lon) AS lon, COUNT(*) AS n
+         FROM keys
+        WHERE album = ? AND status = 'redeemed' AND cidade IS NOT NULL
+        GROUP BY pais, cidade
+        ORDER BY n DESC`).bind(album).all();
+
+    const paises = await env.DB.prepare(
+      `SELECT pais, pais_nome, COUNT(*) AS n
+         FROM keys
+        WHERE album = ? AND status = 'redeemed' AND pais IS NOT NULL
+        GROUP BY pais ORDER BY n DESC`).bind(album).all();
+
+    const totais = await env.DB.prepare(
+      `SELECT COUNT(*) AS resgatados,
+              SUM(CASE WHEN cidade IS NULL THEN 1 ELSE 0 END) AS sem_local
+         FROM keys WHERE album = ? AND status = 'redeemed'`).bind(album).first();
+
+    /* Aplicar o limiar: o que for demasiado pequeno perde o nome. */
+    const visiveis = [], resto = { n: 0, locais: 0 };
+    for (const c of cidades.results) {
+      if (c.n >= MIN_LOCALIDADE) visiveis.push(c);
+      else { resto.n += c.n; resto.locais++; }
+    }
+
+    return json({
+      ok: true,
+      cidades: visiveis,
+      paises: paises.results,
+      agrupadas: resto,
+      resgatados: totais.resgatados,
+      sem_local: totais.sem_local,
+      limiar: MIN_LOCALIDADE,
+    });
+  }
+
   // Liberta uma chave: o comprador trocou de telemóvel, perdeu o acesso, etc.
   if (path === '/api/admin/release' && request.method === 'POST') {
     const { serial, album } = await request.json();
     const r = await env.DB.prepare(
-      `UPDATE keys SET status='unused', redeemed_at=NULL, device=NULL
+      `UPDATE keys SET status='unused', redeemed_at=NULL, device=NULL,
+              pais=NULL, pais_nome=NULL, regiao=NULL, cidade=NULL, lat=NULL, lon=NULL
        WHERE serial=? AND album=? AND status='redeemed'`).bind(serial, album).run();
     return json({ ok: r.meta.changes === 1 });
   }
