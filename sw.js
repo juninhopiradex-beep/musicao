@@ -1,5 +1,5 @@
 /* Music AO — Service Worker (cache-first para o shell da app) */
-const CACHE = 'musicao-v6';   // subir a cada atualização, senão os visitantes continuam com a versão antiga
+const CACHE = 'musicao-v7';   // subir a cada atualização, senão os visitantes continuam com a versão antiga
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const ASSETS = [
   './css/criar.css',
   './js/data.js',
   './js/audio.js',
+  './js/beatfreak-cleaner.js',
   './js/app.js',
   './js/qr.js',
   './js/mapa.js',

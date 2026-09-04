@@ -1451,7 +1451,34 @@ function viewDistribuicao(){
     '</tbody></table></div></div>' : '');
 }
 
+/* ============================================================
+   BEATFREAK AUDIO CLEANER  (visível apenas para administração)
+   Módulo isolado: todo o CSS vive dentro de .bfac e os ids levam
+   o prefixo bfac-, por isso não colide com nada da Music AO.
+   ============================================================ */
+function viewCleaner(){
+  setTimeout(()=>{
+    const host=document.getElementById('cleanerHost');
+    /* o router reescreve o #main a cada mudança de rota, por isso o teste
+       tem de ser feito ao elemento e não a um sinalizador global */
+    if(host && window.BeatfreakCleaner && !host.querySelector('.tabs'))
+      BeatfreakCleaner.mount(host,{
+        esconder:['wm','reg'],
+        paleta:{bg:'#0B0B0F',panel:'#14141A',panel2:'#1B1B23',line:'#23232B',
+                ink:'#EDEDF2',mut:'#8C8C9A',amber:'#F2B01E',
+                sans:'Sora,ui-sans-serif,system-ui,sans-serif'}
+      });
+  },0);
+  return `<section class="page">
+    <h1 class="page-title">Beatfreak Audio Cleaner</h1>
+    <p class="page-sub">Limpeza de metadados, etiquetas, medição de loudness e controlo de entrega. Os ficheiros não saem deste computador.</p>
+    <div id="cleanerHost"></div>
+  </section>`;
+}
+
+
 const routes = {
+  cleaner: viewCleaner,
   home: viewHome, explorar: viewExplorar, pesquisa: viewPesquisa,
   artista: viewArtista, wallet: viewWallet, upload: viewUpload,
   dashboard: viewDashboard, admin: viewAdmin, pagamentos: viewPagamentos,
