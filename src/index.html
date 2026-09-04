@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beatfreak Audio Cleaner</title>
+<!--CSS-->
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Beatfreak Audio Cleaner</h1>
+  <span class="v">v1.0 · offline</span>
+  <p>Inspecciona, limpa e etiqueta masters antes da entrega, e gere a marca de água BeatFreak Studio. As amostras nunca são recodificadas sem necessidade — o SHA-256 do bloco de áudio é comparado antes e depois para o provar. Nada sai deste computador.</p>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="files" class="on">Ficheiros</button>
+  <button role="tab" data-tab="tags">Etiquetas</button>
+  <button role="tab" data-tab="wm">Marca de água</button>
+  <button role="tab" data-tab="meas">Medição</button>
+  <button role="tab" data-tab="reg">Entregas</button>
+  <button role="tab" data-tab="cmp">Comparar</button>
+  <button role="tab" data-tab="spec">Espectro</button>
+</nav>
+
+<!-- ============ FICHEIROS ============ -->
+<div class="panel on" id="p-files">
+  <div id="drop" tabindex="0" role="button" aria-label="Escolher ficheiros de áudio">
+    <strong>Larga aqui os ficheiros ou clica para escolher</strong>
+    <span>WAV · BWF · MP3 · FLAC · AIFF · M4A</span>
+  </div>
+  <input id="picker" type="file" multiple accept=".wav,.bwf,.mp3,.flac,.aif,.aiff,.aifc,.m4a,.mp4,audio/*" class="hidden">
+
+  <div class="grid">
+    <fieldset>
+      <legend>Tags e etiquetas</legend>
+      <label class="opt"><input type="checkbox" id="o_tags" checked>
+        <span>Remover tags ID3, APE e Lyrics3<em>Título, artista, álbum, ISRC, comentários, tags personalizadas</em></span></label>
+      <label class="opt"><input type="checkbox" id="o_art" checked>
+        <span>Remover capa embutida<em>Blocos APIC e PICTURE</em></span></label>
+      <label class="opt"><input type="checkbox" id="o_enc" checked>
+        <span>Neutralizar assinatura do codificador<em>Apaga o identificador LAME e o ReplayGain, mantém o delay de gapless</em></span></label>
+    </fieldset>
+    <fieldset>
+      <legend>Chunks de produção</legend>
+      <label class="opt"><input type="checkbox" id="o_bext" checked>
+        <span>Remover BWF, iXML, XMP e LIST<em>Estúdio, DAW, data, timecode, histórico de codificação, UMID</em></span></label>
+      <label class="opt"><input type="checkbox" id="o_extra" checked>
+        <span>Remover marcadores, regiões e cue points<em>cue, smpl, MARK, SEEKTABLE, CUESHEET</em></span></label>
+      <label class="opt"><input type="checkbox" id="o_junk" checked>
+        <span>Remover lixo antes do primeiro frame<em>Bytes órfãos deixados por editores e conversores</em></span></label>
+    </fieldset>
+  </div>
+
+  <div class="bar">
+    <button id="btnScan" class="primary" disabled>Analisar</button>
+    <button id="btnClean" disabled>Limpar</button>
+    <button id="btnZip" disabled>Descarregar tudo (.zip)</button>
+    <button id="btnClear" disabled>Limpar lista</button>
+    <span class="count" id="count">nenhum ficheiro</span>
+  </div>
+
+  <table id="tbl" class="hidden">
+    <thead><tr>
+      <th>Ficheiro</th><th>Formato</th><th class="n">Metadados</th><th class="n">Tamanho</th><th>Estado</th><th></th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+
+<!-- ============ ETIQUETAS ============ -->
+<div class="panel" id="p-tags">
+  <h2>Escrever etiquetas</h2>
+  <p class="sub">Apaga tudo o que lá estava e escreve de novo, só com o que puseres aqui. ID3v2.3 em MP3, Vorbis comment em FLAC, LIST/INFO em WAV, chunks de texto em AIFF. Em M4A só é possível ler e limpar.</p>
+  <div class="bar" style="margin-top:0">
+    <select id="tagFile"></select>
+    <button id="btnTagRead">Ler do ficheiro</button>
+  </div>
+  <div class="formgrid" id="tagForm"></div>
+  <fieldset style="margin-top:18px">
+    <legend>Extras</legend>
+    <label class="opt"><input type="checkbox" id="t_bext">
+      <span>Assinar o WAV como BeatFreak Studio<em>Escreve um chunk bext novo com o estúdio, a data e a hora</em></span></label>
+    <label class="opt" style="align-items:center"><input type="file" id="tagArt" accept="image/jpeg,image/png" style="margin:0">
+      <span>Capa (JPEG ou PNG) — MP3 e FLAC<em id="artInfo">nenhuma imagem escolhida</em></span></label>
+  </fieldset>
+  <div class="bar">
+    <button id="btnTagApply" class="primary">Aplicar a este ficheiro</button>
+    <button id="btnTagAll">Aplicar a todos</button>
+    <span class="count" id="tagLog"></span>
+  </div>
+</div>
+
+<!-- ============ MARCA DE ÁGUA ============ -->
+<div class="panel" id="p-wm">
+  <h2>Marca de água BeatFreak Studio</h2>
+  <p class="sub">A marca é gerada a partir da tua chave. Quem não a tiver não consegue reconstruir o sinal, e por isso não o consegue subtrair. Marcas de outros aparecem no inventário como detectadas, mas sem chave não são removíveis aqui.</p>
+
+  <div class="formgrid">
+    <label class="fld"><span>Chave do estúdio</span><input id="wmKey" type="password" value="BeatFreak Studio">
+      <em>Guarda-a. Sem ela não há leitura nem remoção das tuas marcas.</em></label>
+    <label class="fld"><span>Faixa ou sessão</span><input id="wmTrack" placeholder="Gostos Antecipados — master v3"></label>
+    <label class="fld"><span>Número da cópia</span><input id="wmCopy" type="number" value="1" min="0" max="65535">
+      <em>Uma cópia por destinatário permite saber de onde veio uma fuga.</em></label>
+    <label class="fld"><span>Banda</span><select id="wmBand">
+      <option value="alta">15–20 kHz — inaudível</option>
+      <option value="media">4–9 kHz — mais robusta</option></select></label>
+    <label class="fld"><span>Nível abaixo do sinal</span><select id="wmStrength">
+      <option value="48">48 dB — mais discreta</option>
+      <option value="42" selected>42 dB — equilíbrio</option>
+      <option value="36">36 dB — mais robusta</option></select></label>
+  </div>
+
+  <fieldset style="margin-top:16px">
+    <legend>Ao marcar</legend>
+    <label class="opt"><input type="checkbox" id="wmKeepTags" checked>
+      <span>Levar as etiquetas do original para o ficheiro marcado<em>Sem isto o WAV marcado sai só com fmt e data</em></span></label>
+    <label class="opt"><input type="checkbox" id="wmRegister" checked>
+      <span>Registar a entrega<em>Guarda faixa, cópia, destinatário e SHA-256 no separador Entregas</em></span></label>
+  </fieldset>
+
+  <div class="bar">
+    <button id="btnWmScan" class="primary">Ver que marcas têm</button>
+    <button id="btnWmEmbed">Marcar</button>
+    <button id="btnWmRemove">Remover a minha marca</button>
+    <select id="wmFile"></select>
+  </div>
+
+  <label class="fld" style="margin-top:16px"><span>Destinatários, um por linha — gera uma cópia numerada para cada</span>
+    <textarea id="wmBatch" rows="4" placeholder="Editora Kalunga&#10;Rádio Escola&#10;DJ Maninho"></textarea></label>
+  <div class="bar">
+    <button id="btnWmBatch">Marcar em lote</button>
+    <button id="btnWmZip">Descarregar as cópias (.zip)</button>
+  </div>
+
+  <div class="log" id="wmLog"></div>
+  <div class="dlbox" id="wmOut"></div>
+
+  <table id="wmTbl" class="hidden">
+    <thead><tr><th>Ficheiro</th><th>Marca BeatFreak</th><th>Cópia</th><th>Data</th><th class="n">Margem</th><th>Outros sinais</th></tr></thead>
+    <tbody id="wmRows"></tbody>
+  </table>
+</div>
+
+<!-- ============ MEDIÇÃO ============ -->
+<div class="panel" id="p-meas">
+  <h2>Controlo de entrega</h2>
+  <p class="sub">Loudness por ITU-R BS.1770-4 e EBU R128, true peak com sobreamostragem de 4×, e as leituras que dizem o que é que o ficheiro é mesmo — por baixo do que o cabeçalho declara.</p>
+  <div class="bar" style="margin-top:0">
+    <select id="measFile"></select>
+    <button id="btnMeas" class="primary">Medir</button>
+    <label class="opt" style="padding:0"><input type="checkbox" id="measSpec" checked>
+      <span>Incluir a análise espectral<em>Para detectar origem em codec com perdas</em></span></label>
+  </div>
+  <div class="log" id="measLog"></div>
+  <div id="measOut" class="hidden">
+    <div class="det" style="padding:0; margin-top:18px">
+      <div><h4>Loudness e pico</h4><div class="kv" id="measA"></div></div>
+      <div><h4>O ficheiro por dentro</h4><div class="kv" id="measB"></div></div>
+    </div>
+    <div class="canvasBox" style="margin-top:18px">
+      <canvas id="measWave" data-h="150" height="150"></canvas>
+      <div class="axis"><span>forma de onda · vermelho: amostras no fundo de escala e overs de true peak</span><span id="waveInfo"></span></div>
+    </div>
+    <div class="canvasBox">
+      <canvas id="measLoud" data-h="170" height="170"></canvas>
+      <div class="axis"><span>loudness ao longo do tempo, em LUFS</span><span>âmbar: short-term · cinza: momentâneo · faixa azul: loudness range</span></div>
+    </div>
+    <h4 style="margin:22px 0 8px; font-size:12.5px; color:var(--mut); font-weight:500">Contra os alvos</h4>
+    <table><thead><tr><th>Destino</th><th class="n">Alvo</th><th class="n">Diferença</th><th class="n">Tecto</th><th>Estado</th></tr></thead>
+    <tbody id="measTargets"></tbody></table>
+    <div class="findings" id="measFind"></div>
+  </div>
+</div>
+
+<!-- ============ ENTREGAS ============ -->
+<div class="panel" id="p-reg">
+  <h2>Registo de entregas</h2>
+  <p class="sub">Cada cópia marcada fica aqui com o destinatário e o SHA-256 do ficheiro entregue. Se um dia aparecer uma fuga, lês o número da cópia e sabes de onde veio. Fica guardado só neste browser — exporta de vez em quando.</p>
+  <div class="bar" style="margin-top:0">
+    <button id="btnRegCSV">Exportar CSV</button>
+    <button id="btnRegJSON">Exportar JSON</button>
+    <button id="btnRegClear">Apagar tudo</button>
+    <span class="count" id="regCount"></span>
+  </div>
+  <table id="regTbl"><thead><tr>
+    <th>Data</th><th>Faixa</th><th class="n">Cópia</th><th>Destinatário</th><th>Ficheiro</th><th>SHA-256</th><th></th>
+  </tr></thead><tbody id="regRows"></tbody></table>
+</div>
+
+<!-- ============ COMPARAR ============ -->
+<div class="panel" id="p-cmp">
+  <h2>Comparar dois ficheiros</h2>
+  <p class="sub">Subtrai um ficheiro do outro e deixa ouvir só a diferença. É assim que se prova que uma marca de água é inaudível, e é assim que se descobre o que é que um distribuidor fez a um master que voltou.</p>
+  <div class="formgrid">
+    <label class="fld"><span>A — referência</span><select id="cmpA"></select></label>
+    <label class="fld"><span>B — a comparar</span><select id="cmpB"></select></label>
+  </div>
+  <div class="bar">
+    <button id="btnCmp" class="primary">Calcular a diferença</button>
+    <button id="btnCmpPlayA" disabled>Ouvir A</button>
+    <button id="btnCmpPlayB" disabled>Ouvir B</button>
+    <button id="btnCmpPlayD" disabled>Ouvir só a diferença</button>
+    <button id="btnCmpStop" disabled>Parar</button>
+  </div>
+  <label class="fld" style="max-width:420px"><span>Amplificar o que se ouve: <b id="cmpGainV">+40 dB</b></span>
+    <input id="cmpGain" type="range" min="0" max="70" value="40" step="1"></label>
+  <div class="log" id="cmpLog"></div>
+  <div id="cmpOut" class="hidden">
+    <div class="canvasBox">
+      <canvas id="cmpCanvas" data-h="160" height="160"></canvas>
+      <div class="axis"><span>nível da diferença ao longo do tempo</span><span id="cmpAxis"></span></div>
+    </div>
+    <div class="det" style="padding:0; margin-top:16px">
+      <div><h4>A diferença</h4><div class="kv" id="cmpKV"></div></div>
+      <div><h4>Leitura</h4><div class="findings" id="cmpFind"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ESPECTRO ============ -->
+<div class="panel" id="p-spec">
+  <h2>Análise espectral</h2>
+  <p class="sub">Procura assinaturas típicas de marca de água: entalhes fixos no espectro, energia acima da banda audível, padrões que se repetem no tempo e conteúdo escondido no canal lateral. É uma leitura de diagnóstico — indica onde olhar, não dá uma certeza.</p>
+  <div class="bar" style="margin-top:0">
+    <select id="anaFile"></select>
+    <button id="btnAna">Analisar espectro</button>
+  </div>
+  <div id="anaOut" class="hidden">
+    <div class="canvasBox">
+      <canvas id="spec" width="1000" height="300"></canvas>
+      <div class="axis"><span>0 s</span><span id="axMid"></span><span id="axEnd"></span></div>
+    </div>
+    <div class="canvasBox">
+      <canvas id="avg" width="1000" height="200"></canvas>
+      <div class="axis"><span>0 Hz</span><span id="axF1"></span><span id="axF2"></span><span id="axF3"></span><span id="axNy"></span></div>
+    </div>
+    <div class="findings" id="findings"></div>
+    <p class="note">Uma marca de água forense é desenhada para sobreviver a conversões e para não ser vista num espectrograma. Não encontrar nada aqui não significa que o ficheiro esteja limpo.</p>
+  </div>
+  <div class="log" id="anaLog"></div>
+</div>
+
+</div>
+<!--JS-->
+</body>
+</html>

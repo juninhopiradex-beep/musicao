@@ -1,0 +1,134 @@
+/* Beatfreak Audio Cleaner — estilos isolados em .bfac */
+.bfac{
+  --bg:#12161b; --panel:#1a2027; --panel2:#20272f; --line:#2c343d;
+  --ink:#e2e7ec; --mut:#8c99a6; --dim:#5d6975;
+  --amber:#f0a637; --green:#7ed6a4; --red:#e2685f; --blue:#6fb6dd;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+.bfac,.bfac *{box-sizing:border-box}
+.bfac,.bfac{margin:0;padding:0}
+.bfac{
+  background:var(--bg); color:var(--ink); font-family:var(--sans);
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+.bfac .wrap{max-width:1080px; margin:0 auto; padding:28px 20px 90px}
+.bfac header{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; padding-bottom:18px; border-bottom:1px solid var(--line)}
+.bfac header h1{font-size:20px; font-weight:600; letter-spacing:-.01em; margin:0}
+.bfac header .v{font-family:var(--mono); font-size:12px; color:var(--dim)}
+.bfac header p{margin:0; color:var(--mut); font-size:13.5px; flex-basis:100%; max-width:70ch}
+.bfac section{padding:26px 0; border-bottom:1px solid var(--line)}
+.bfac section:last-of-type{border-bottom:0}
+.bfac h2{font-size:15px; font-weight:600; margin:0 0 4px}
+.bfac .sub{color:var(--mut); font-size:13px; margin:0 0 16px; max-width:74ch}
+.bfac /* dropzone */
+#drop{
+  border:1px dashed var(--line); border-radius:4px; background:var(--panel);
+  padding:34px 20px; text-align:center; cursor:pointer; transition:border-color .15s,background .15s;
+}
+.bfac #drop:hover,.bfac #drop.over{border-color:var(--amber); background:var(--panel2)}
+.bfac #drop strong{display:block; font-weight:500; font-size:15px}
+.bfac #drop span{color:var(--mut); font-size:13px; font-family:var(--mono)}
+.bfac /* controls */
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:18px 28px; margin-top:18px}
+.bfac fieldset{border:0; border-top:1px solid var(--line); margin:0; padding:12px 0 0}
+.bfac legend{padding:0; font-size:12.5px; color:var(--mut); font-weight:500}
+.bfac label.opt{display:flex; gap:9px; align-items:flex-start; padding:4px 0; cursor:pointer; font-size:13.5px}
+.bfac label.opt input{margin:3px 0 0; accent-color:var(--amber); flex:none}
+.bfac label.opt em{display:block; font-style:normal; color:var(--dim); font-size:12px; line-height:1.4}
+.bfac label.opt.off{opacity:.45; cursor:not-allowed}
+.bfac .bar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:22px}
+.bfac button{
+  font:inherit; font-size:13.5px; padding:9px 18px; border-radius:3px; cursor:pointer;
+  background:var(--panel2); color:var(--ink); border:1px solid var(--line);
+}
+.bfac button:hover:not(:disabled){border-color:var(--mut)}
+.bfac button:disabled{opacity:.4; cursor:not-allowed}
+.bfac button.primary{background:var(--amber); color:#171207; border-color:var(--amber); font-weight:600}
+.bfac button.primary:hover:not(:disabled){background:#ffbb4d}
+.bfac button:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
+.bfac .count{font-family:var(--mono); font-size:12.5px; color:var(--mut); margin-left:auto}
+.bfac /* file list */
+table{width:100%; border-collapse:collapse; margin-top:6px}
+.bfac th{
+  text-align:left; font-weight:500; font-size:12px; color:var(--mut);
+  padding:0 10px 8px; border-bottom:1px solid var(--line);
+}
+.bfac th.n,.bfac td.n{text-align:right; font-family:var(--mono)}
+.bfac td{padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; font-size:13.5px}
+.bfac tr.f{cursor:pointer}
+.bfac tr.f:hover td{background:var(--panel)}
+.bfac td.name{max-width:340px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.bfac td.fmt{font-family:var(--mono); font-size:12px; color:var(--mut)}
+.bfac .chip{font-family:var(--mono); font-size:11.5px; padding:2px 7px; border-radius:2px; border:1px solid var(--line); color:var(--mut); white-space:nowrap}
+.bfac .chip.ok{color:var(--green); border-color:#2f5a45}
+.bfac .chip.warn{color:var(--amber); border-color:#5a4526}
+.bfac .chip.err{color:var(--red); border-color:#5a3230}
+.bfac .chip.idle{color:var(--dim)}
+.bfac tr.detail td{background:#0e1216; border-bottom:1px solid var(--line); padding:0}
+.bfac .det{padding:16px 18px; display:grid; grid-template-columns:1fr 1fr; gap:20px}
+@media(max-width:760px){.bfac .det{grid-template-columns:1fr}}
+.bfac .det h4{margin:0 0 8px; font-size:12.5px; color:var(--mut); font-weight:500}
+.bfac .kv{font-family:var(--mono); font-size:12px; line-height:1.75}
+.bfac .kv div{display:flex; gap:12px}
+.bfac .kv b{font-weight:400; color:var(--dim); flex:none; min-width:118px}
+.bfac .kv span{color:var(--ink); word-break:break-all}
+.bfac .kv span.g{color:var(--green)}
+.bfac .kv span.a{color:var(--amber)}
+.bfac .kv span.r{color:var(--red)}
+.bfac .blocks{font-family:var(--mono); font-size:12px}
+.bfac .blk{padding:6px 0; border-bottom:1px solid #1b2128}
+.bfac .blk:last-child{border-bottom:0}
+.bfac .blk .h{display:flex; gap:10px; align-items:baseline}
+.bfac .blk .h b{font-weight:500; color:var(--amber)}
+.bfac .blk .h i{font-style:normal; color:var(--dim); margin-left:auto}
+.bfac .blk .f{color:var(--mut); padding-left:2px}
+.bfac .blk .f u{text-decoration:none; color:var(--dim)}
+.bfac .empty{color:var(--dim); font-family:var(--mono); font-size:12px}
+.bfac /* analyser */
+#anaFile{background:var(--panel2); color:var(--ink); border:1px solid var(--line); border-radius:3px; padding:8px 10px; font:inherit; font-size:13.5px; max-width:100%}
+.bfac .canvasBox{margin-top:18px; border:1px solid var(--line); border-radius:3px; background:#0c0f13; padding:12px; overflow:hidden}
+.bfac canvas{display:block; width:100%; height:auto; image-rendering:pixelated}
+.bfac .axis{display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--dim); padding-top:6px}
+.bfac .findings{margin-top:16px; display:grid; gap:10px}
+.bfac .find{display:flex; gap:12px; padding:11px 13px; border:1px solid var(--line); border-left-width:3px; border-radius:3px; background:var(--panel)}
+.bfac .find.hit{border-left-color:var(--amber)}
+.bfac .find.clear{border-left-color:var(--green)}
+.bfac .find.info{border-left-color:var(--line)}
+.bfac .find .t{font-size:13.5px}
+.bfac .find .t em{font-style:normal; display:block; color:var(--mut); font-size:12.5px; margin-top:2px}
+.bfac .find .m{margin-left:auto; font-family:var(--mono); font-size:12px; color:var(--mut); text-align:right; white-space:nowrap; flex:none}
+.bfac .note{font-size:12.5px; color:var(--dim); margin-top:14px; max-width:78ch}
+.bfac .log{font-family:var(--mono); font-size:12px; color:var(--mut); margin-top:12px; white-space:pre-wrap}
+.bfac .hidden{display:none !important}
+.bfac a.dl{color:var(--amber); font-family:var(--mono); font-size:12px; text-decoration:none; border-bottom:1px solid #5a4526}
+.bfac a.dl:hover{color:#ffbb4d}
+.bfac /* ---- separadores ---- */
+.tabs{display:flex; gap:4px; border-bottom:1px solid var(--line); margin-top:6px; flex-wrap:wrap}
+.bfac .tabs button{background:none; border:0; border-bottom:2px solid transparent; border-radius:0;
+  padding:12px 14px; color:var(--mut); font-size:14px}
+.bfac .tabs button:hover{color:var(--ink)}
+.bfac .tabs button.on{color:var(--ink); border-bottom-color:var(--amber)}
+.bfac .panel{display:none; padding:26px 0}
+.bfac .panel.on{display:block}
+.bfac /* ---- formulários ---- */
+.formgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px 22px; margin-top:18px}
+.bfac .fld{display:flex; flex-direction:column; gap:5px; font-size:13px}
+.bfac .fld>span{color:var(--mut)}
+.bfac .fld em{font-style:normal; color:var(--dim); font-size:11.5px; line-height:1.4}
+.bfac input[type=text],.bfac input[type=password],.bfac input[type=number],.bfac select,.bfac textarea{
+  background:var(--panel2); color:var(--ink); border:1px solid var(--line); border-radius:3px;
+  padding:8px 10px; font:inherit; font-size:13.5px; width:100%; min-width:0;
+}
+.bfac input:focus,.bfac select:focus{outline:2px solid var(--blue); outline-offset:-1px; border-color:transparent}
+.bfac select{max-width:100%}
+.bfac .bar select{width:auto; max-width:320px}
+.bfac textarea{background:var(--panel2); color:var(--ink); border:1px solid var(--line); border-radius:3px;
+  padding:9px 10px; font:inherit; font-size:13.5px; width:100%; resize:vertical; line-height:1.5}
+.bfac textarea:focus{outline:2px solid var(--blue); outline-offset:-1px}
+.bfac .dlbox{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:12px}
+.bfac .dlbox a{font-family:var(--mono); font-size:12px}
+.bfac .big{font-family:var(--mono); font-size:26px; letter-spacing:-.02em; color:var(--ink); line-height:1.1}
+.bfac .big small{display:block; font-family:var(--sans); font-size:12px; color:var(--mut); letter-spacing:0; margin-top:3px}
+.bfac input[type=range]{width:100%; accent-color:var(--amber); background:none; border:0; padding:0}
+.bfac .canvasBox canvas{width:100%;height:auto}

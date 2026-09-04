@@ -1,0 +1,13 @@
+{
+  "name": "beatfreak-audio-cleaner",
+  "version": "1.0.0",
+  "description": "Limpeza de metadados, escrita de etiquetas e marca de água com chave para masters de áudio. Corre no browser, sem servidor.",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "build": "python3 tools/build.py && python3 tools/embed.py",
+    "fixtures": "python3 tools/make_fixtures.py",
+    "test": "python3 tools/build.py && python3 tools/embed.py && node test/run.mjs"
+  },
+  "devDependencies": { "jsdom": "^24.0.0" }
+}

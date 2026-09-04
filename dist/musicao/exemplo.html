@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music AO — Beatfreak Audio Cleaner</title>
+<link rel="stylesheet" href="beatfreak-cleaner.css">
+<style>
+:root{
+  --bg:#0B0B0F; --surface:#14141A; --surface2:#1B1B23; --line:#23232B;
+  --text:#EDEDF2; --mut:#8C8C9A; --red:#E0122C; --gold:#F2B01E;
+  --font:"Sora",ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-display:"Unbounded",var(--font);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px}
+.app{display:grid;grid-template-columns:262px 1fr;min-height:100vh}
+
+.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;overflow:hidden;
+  padding:26px 18px;border-right:1px solid var(--line);background:rgba(11,11,15,.9)}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-shrink:0;text-decoration:none;color:inherit}
+.brand-mark{width:38px;height:38px;background:var(--surface);border-radius:10px;padding:4px}
+.brand-name{font-family:var(--font-display);font-weight:900;font-size:17px;letter-spacing:.5px}
+.brand-name em{font-style:normal;color:var(--red)}
+.nav{display:flex;flex-direction:column;gap:3px;flex:1 1 auto;min-height:0;overflow-y:auto;padding-right:4px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;
+  color:var(--mut);text-decoration:none;font-size:14px}
+.nav a:hover{background:var(--surface);color:var(--text)}
+.nav a.active{background:var(--surface2);color:var(--text)}
+.nav a.active .nav-ico{color:var(--gold)}
+.nav-ico{width:18px;text-align:center;font-size:15px;color:var(--mut)}
+.nav .sep{margin:12px 12px 6px;font-size:10.5px;letter-spacing:.14em;color:#5A5A68;text-transform:uppercase}
+.sidebar-foot{flex-shrink:0;padding-top:14px;border-top:1px solid var(--line);margin-top:12px}
+.role-label{display:block;font-size:11px;color:#5A5A68;margin-bottom:7px}
+.role-btns{display:flex;gap:4px}
+.role-btns button{flex:1;padding:6px 4px;font:inherit;font-size:11.5px;border-radius:7px;cursor:pointer;
+  background:var(--surface);border:1px solid var(--line);color:var(--mut)}
+.role-btns button.active{background:var(--red);border-color:var(--red);color:#fff;font-weight:600}
+.wallet-chip{display:flex;align-items:center;gap:8px;margin-top:12px;padding:9px 12px;
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;font-size:13px}
+.wallet-dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+.wallet-chip b{margin-left:auto;font-weight:600}
+
+main{padding:34px 38px 60px;max-width:1180px}
+.page-title{font-family:var(--font-display);font-weight:700;font-size:26px;margin:0 0 6px;letter-spacing:-.01em}
+.page-sub{color:var(--mut);font-size:14px;margin:0 0 4px;max-width:76ch}
+.crumb{font-size:12px;color:#5A5A68;margin-bottom:14px}
+.crumb b{color:var(--gold);font-weight:500}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:22px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+.card .n{font-family:var(--font-display);font-size:24px;font-weight:700}
+.card .l{color:var(--mut);font-size:12.5px;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <a class="brand" href="#/home">
+      <svg viewBox="0 0 100 100" class="brand-mark" aria-hidden="true">
+        <path d="M30 70V32l14 22 14-22v38" stroke="#E0122C" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="74" cy="36" r="7" fill="#F2B01E"/>
+      </svg>
+      <span class="brand-name">MUSIC<em>AO</em></span>
+    </a>
+
+    <nav class="nav">
+      <a href="#/home"><span class="nav-ico">◉</span> Início</a>
+      <a href="#/explorar"><span class="nav-ico">▤</span> Explorar</a>
+      <a href="#/pesquisa"><span class="nav-ico">⌕</span> Pesquisar</a>
+      <a href="#/carteira"><span class="nav-ico">▣</span> Carteira</a>
+      <a href="#/upload"><span class="nav-ico">▲</span> Publicar</a>
+      <a href="#/dashboard"><span class="nav-ico">◫</span> Meu painel</a>
+      <div class="sep">Administração</div>
+      <a href="#/admin"><span class="nav-ico">⛭</span> Administração</a>
+      <a href="#/lancamentos"><span class="nav-ico">◐</span> Lançamentos</a>
+      <a href="#/distribuicao"><span class="nav-ico">◎</span> Distribuição</a>
+      <a href="#/pagamentos"><span class="nav-ico">◈</span> Pagamentos PSX</a>
+      <a href="#/cleaner" class="active"><span class="nav-ico">◆</span> Audio Cleaner</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="role-switch">
+        <span class="role-label">Demo — perfil</span>
+        <div class="role-btns">
+          <button>Ouvinte</button><button>Artista</button><button class="active">Admin</button>
+        </div>
+      </div>
+      <div class="wallet-chip"><span class="wallet-dot"></span> Carteira <b>1 240 Kz</b></div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="crumb">Administração · <b>Audio Cleaner</b></div>
+    <h1 class="page-title">Beatfreak Audio Cleaner</h1>
+    <p class="page-sub">Limpeza de metadados, etiquetas, medição de loudness e controlo de entrega. Os ficheiros não saem deste computador.</p>
+    <div id="cleanerHost"></div>
+  </main>
+
+</div>
+
+<script src="beatfreak-cleaner.js"></script>
+<script>
+BeatfreakCleaner.mount(document.getElementById('cleanerHost'),{
+  esconder:['reg'],
+  paleta:{bg:'#0B0B0F',panel:'#14141A',panel2:'#1B1B23',line:'#23232B',
+          ink:'#EDEDF2',mut:'#8C8C9A',amber:'#F2B01E'}
+});
+
+/* Gera um master de exemplo para a demonstração, com metadados de estúdio
+   lá dentro, para não ser preciso ter um ficheiro à mão. */
+function exemploWav(seg){
+  const sr=44100, n=sr*seg, dados=[];
+  for(let c=0;c<2;c++){
+    const x=new Float64Array(n);
+    for(let i=0;i<n;i++){
+      const t=i/sr, env=(0.45+0.4*Math.sin(2*Math.PI*t/6))*(t<1?t:1);
+      const kick=Math.exp(-((t*2)%1)*14)*Math.sin(2*Math.PI*52*t);
+      let s=0.42*kick+0.20*Math.sin(2*Math.PI*(196+c*1.5)*t)+0.11*Math.sin(2*Math.PI*294*t)
+           +0.07*Math.sin(2*Math.PI*440*t+t)+(Math.floor(t*8)%2===0?(Math.random()*2-1)*0.05:0);
+      x[i]=Math.max(-1,Math.min(1,s*env*0.82));
+    }
+    dados.push(x);
+  }
+  const bext=new Uint8Array(602), enc=new TextEncoder();
+  bext.set(enc.encode('Gostos Antecipados — master v3'),0);
+  bext.set(enc.encode('Pro Tools 2024 — BeatFreak'),256);
+  bext.set(enc.encode('2026-08-14'),320); bext.set(enc.encode('10:22:31'),330);
+  const info=[['IART','Piradex'],['ICMT','entrega distribuidora'],['ISFT','Pro Tools']];
+  const ch=(id,b)=>{const p=b.length&1?1:0,o=new Uint8Array(8+b.length+p);
+    o.set(enc.encode(id),0); new DataView(o.buffer).setUint32(4,b.length,true); o.set(b,8); return o;};
+  let lst=enc.encode('INFO'); const partes=[lst];
+  for(const [k,v] of info) partes.push(ch(k,enc.encode(v+'\0')));
+  let ln=0; for(const p of partes) ln+=p.length;
+  const listBody=new Uint8Array(ln); let off=0; for(const p of partes){listBody.set(p,off);off+=p.length;}
+  const fmt=new Uint8Array(16), dv=new DataView(fmt.buffer);
+  dv.setUint16(0,1,true); dv.setUint16(2,2,true); dv.setUint32(4,sr,true);
+  dv.setUint32(8,sr*4,true); dv.setUint16(12,4,true); dv.setUint16(14,16,true);
+  const pcm=new Uint8Array(n*4), pv=new DataView(pcm.buffer);
+  for(let i=0;i<n;i++){ pv.setInt16(i*4,Math.round(dados[0][i]*32000),true);
+                        pv.setInt16(i*4+2,Math.round(dados[1][i]*32000),true); }
+  const cs=[ch('fmt ',fmt),ch('bext',bext),ch('LIST',listBody),ch('data',pcm)];
+  let total=4; for(const c of cs) total+=c.length;
+  const out=new Uint8Array(8+total), ov=new DataView(out.buffer);
+  out.set(enc.encode('RIFF'),0); ov.setUint32(4,total,true); out.set(enc.encode('WAVE'),8);
+  let o=12; for(const c of cs){ out.set(c,o); o+=c.length; }
+  return out;
+}
+window.carregarExemplo=async function(seg){
+  const b=exemploWav(seg||25);
+  BeatfreakCleaner.adicionar([{name:'Gostos Antecipados — master v3.wav',size:b.length,
+    arrayBuffer:async()=>b.buffer.slice(0)}]);
+  await BeatfreakCleaner.analisar_tudo();
+};
+</script>
+</body>
+</html>
